@@ -1,0 +1,49 @@
+============================================================
+REPORT CLINICO
+============================================================
+
+ID Encounter: 9b7c69a2-9bf7-4caa-9c91-60cd24952898
+Data: 07/10/2025 10:41
+Medico: Dr. Mario Rossi
+Paziente: Maria Bianchi
+Priorità Triage: Codice Giallo
+Motivo accesso: Dolore toracico e dispnea
+
+------------------------------------------------------------
+INFORMAZIONI PAZIENTE
+------------------------------------------------------------
+Nome Completo: si chiama
+Età: 44
+
+------------------------------------------------------------
+PARAMETRI VITALI
+------------------------------------------------------------
+Frequenza Cardiaca: 82 bpm
+Saturazione Ossigeno: 96%
+
+------------------------------------------------------------
+STORIA DELLA MALATTIA ATTUALE
+------------------------------------------------------------
+di pertenzione arteriosa e abitudine al fumo, si suspecta angine instabile
+
+------------------------------------------------------------
+VALUTAZIONE CLINICA
+------------------------------------------------------------
+La paziente si chiama Laura Bianchi. è nata il 15 April 1989. 44 anni, sesso femminile, residente affirenze, vi aroma 12. Numero di telefono 0,55 milione 234,567. accesso autonomo. riferisce dolore toracico in nausea. La paziente è cosciente, correspiro normale, cute normale, pupille i zocoriche e reattive. Non assume farmaci. Saturazione 96%, 82 bpm, temperatura corpore a 37,2, pressione sanguigna 130/85, glicce mia 98. riferisce dolore toracico in nausea, condizioni compatibili con un possibile evento cardiovascolare in fase iniziale. In considerazione della storia clinica di pertenzione arteriosa e abitudine al fumo, si suspecta angine instabile. In attesa di ECG, è stato attivato il monitoraggio continuo e prevista una valutazione cardiologica urgente. Code C di triage assegnato giallo.
+
+------------------------------------------------------------
+INFORMAZIONI TECNICHE
+------------------------------------------------------------
+Data Generazione: 07/10/2025 13:06:23
+ID Trascrizione: 98080079-ab0c-4e3b-9d19-0687de9b25b1
+Confidenza Trascrizione: 62.5%
+Confidenza Estrazione: 61.5%
+Durata Audio: 67.9 secondi
+
+DISCLAIMER:
+Questo report è stato generato automaticamente da un sistema di trascrizione
+e analisi del linguaggio naturale. Le informazioni contenute devono essere
+verificate e validate da personale medico qualificato prima di qualsiasi
+utilizzo clinico.
+
+============================================================

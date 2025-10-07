@@ -1,0 +1,90 @@
+/* CSS personalizzato per conformità AGID */
+
+/* Import font Titillium Web */
+@import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;500;600;700&display=swap');
+
+/* Import Bootstrap Icons */
+@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css');
+
+/* Override variables Bootstrap Italia */
+:root {
+  --bs-primary: #0066CC;
+  --bs-primary-dark: #004080;
+  --bs-success: #00C781;
+  --bs-warning: #FFB353;
+  --bs-danger: #FF5757;
+  --bs-light-grey: #F5F5F5;
+  --bs-border-radius: 0.25rem;
+  
+  /* Medical system specific colors */
+  --medical-emergency: #CC0000;
+  --medical-urgent: #FF6600;
+  --medical-normal: #00AA44;
+  --medical-low: #0066CC;
+}
+
+/* Base styling */
+.App {
+  font-family: 'Titillium Web', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bs-light-grey);
+}
+
+/* Layout components */
+.main-content {
+  flex: 1;
+  width: 100%;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+/* Dashboard specific */
+.dashboard-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.encounter-card {
+  border: none;
+  border-radius: var(--bs-border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+.encounter-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Triage priority colors */
+.triage-white { border-left: 5px solid #FFFFFF; }
+.triage-green { border-left: 5px solid var(--medical-normal); }
+.triage-yellow { border-left: 5px solid var(--medical-urgent); }
+.triage-red { border-left: 5px solid var(--medical-emergency); }
+
+/* Full width utilities */
+.full-width {
+  width: 100% !important;
+}
+
+.container-full {
+  width: 100% !important;
+  max-width: none !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Layout fixes */
+.d-flex {
+  width: 100%;
+}
+
+.row {
+  width: 100%;
+  margin: 0;
+}
+.triage-red { border-left: 5px solid var(--medical-emergency); }
+.triage-black { border-left: 5px solid #000000; }

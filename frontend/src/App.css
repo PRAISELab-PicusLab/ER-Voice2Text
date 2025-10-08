@@ -88,3 +88,151 @@
 }
 .triage-red { border-left: 5px solid var(--medical-emergency); }
 .triage-black { border-left: 5px solid #000000; }
+
+/* Professional white header styles */
+.navbar-light.bg-white {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.navbar-light .navbar-brand {
+  color: var(--bs-primary) !important;
+  font-weight: 600;
+}
+
+.navbar-light .nav-link {
+  color: #495057 !important;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.navbar-light .nav-link:hover {
+  color: var(--bs-primary) !important;
+  background-color: rgba(0, 102, 204, 0.1);
+}
+
+/* Fix dropdown positioning to prevent layout shift */
+.dropdown-menu {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 1000;
+  min-width: 200px;
+  margin: 0.125rem 0 0;
+  padding: 0.5rem 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 0.375rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 1rem;
+  clear: both;
+  font-weight: 400;
+  color: #212529;
+  text-align: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  background-color: transparent;
+  border: 0;
+  transition: all 0.15s ease-in-out;
+}
+
+.dropdown-item:hover {
+  color: #16181b;
+  background-color: #f8f9fa;
+}
+
+/* Ensure icons maintain consistent color */
+.text-primary {
+  color: var(--bs-primary) !important;
+}
+
+/* Shadow for professional look */
+.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+/* Mobile-first emergency interface for doctors */
+.emergency-header {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  background: white;
+}
+
+/* Touch-friendly buttons for emergency use */
+.btn-emergency {
+  min-height: 48px;
+  min-width: 48px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-emergency:active {
+  transform: scale(0.98);
+}
+
+/* Mobile card improvements */
+.mobile-patient-card {
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.mobile-patient-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+/* Emergency button styling */
+.btn-danger.btn-lg {
+  background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
+  border: none;
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-danger.btn-lg:hover {
+  background: linear-gradient(135deg, #b02a37 0%, #8b1e2b 100%);
+  box-shadow: 0 6px 12px rgba(220, 53, 69, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Compact spacing for mobile */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .py-2 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  
+  /* Make statistics cards more compact */
+  .card-body.p-3 {
+    padding: 0.75rem !important;
+  }
+  
+  /* Better mobile button groups */
+  .btn-group-sm .btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

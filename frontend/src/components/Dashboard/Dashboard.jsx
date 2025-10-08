@@ -25,122 +25,92 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="container-fluid py-4">
-      <div className="row mb-4">
-        <div className="col">
-          <h1 className="h2 fw-bold text-primary">
-            <i className="bi bi-speedometer2 me-2"></i>
-            Dashboard Pronto Soccorso
-          </h1>
-          <p className="text-muted">
-            Benvenuto, {user?.get_full_name} - {user?.department}
-          </p>
+    <div className="container-fluid py-2">
+
+      {/* Messaggio e pulsante Nuova Emergenza centrale */}
+      <div className="row justify-content-center mb-4">
+        <div className="col-12 col-md-10 col-lg-8 d-flex flex-column align-items-center">
+          <div className="alert alert-warning text-center w-100 mb-3 p-3 fs-5 fw-semibold" style={{borderRadius: '1.5rem'}}>
+            <span className="text-danger">AZIONE RAPIDA:</span> Premi il pulsante qui sotto per registrare subito una nuova emergenza!
+          </div>
+          <a 
+            href="/encounter/new" 
+            className="btn btn-danger btn-lg px-4 py-3 shadow-lg fs-3 fw-bold w-100 text-uppercase text-center"
+            style={{ maxWidth: '480px', borderRadius: '1.5rem', letterSpacing: '0.04em' }}
+          >
+            <i className="bi bi-plus-circle-fill me-2"></i>
+            NUOVA EMERGENZA
+          </a>
         </div>
       </div>
 
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card bg-primary text-white">
-            <div className="card-body">
-              <div className="d-flex justify-content-between">
+      {/* Mobile-first statistics cards */}
+      <div className="row mb-3 g-2">
+        <div className="col-6 col-md-3">
+          <div className="card bg-primary text-white h-100">
+            <div className="card-body p-3">
+              <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <h4 className="fw-bold">{analytics?.total_patients || 0}</h4>
-                  <p className="mb-0">Pazienti Totali</p>
+                  <h5 className="fw-bold mb-1">{analytics?.total_patients || 0}</h5>
+                  <p className="mb-0 small">Pazienti</p>
                 </div>
-                <i className="bi bi-person-plus display-6"></i>
+                <i className="bi bi-person-plus h4 mb-0"></i>
               </div>
             </div>
           </div>
         </div>
         
-        <div className="col-md-3">
-          <div className="card bg-success text-white">
-            <div className="card-body">
-              <div className="d-flex justify-content-between">
+        <div className="col-6 col-md-3">
+          <div className="card bg-danger text-white h-100">
+            <div className="card-body p-3">
+              <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <h4 className="fw-bold">{analytics?.visits_today || 0}</h4>
-                  <p className="mb-0">Visite Oggi</p>
+                  <h5 className="fw-bold mb-1">{analytics?.visits_today || 0}</h5>
+                  <p className="mb-0 small">Emergenze Oggi</p>
                 </div>
-                <i className="bi bi-calendar-check display-6"></i>
+                <i className="bi bi-exclamation-triangle h4 mb-0"></i>
               </div>
             </div>
           </div>
         </div>
         
-        <div className="col-md-3">
-          <div className="card bg-warning text-white">
-            <div className="card-body">
-              <div className="d-flex justify-content-between">
+        <div className="col-6 col-md-3">
+          <div className="card bg-warning text-white h-100">
+            <div className="card-body p-3">
+              <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <h4 className="fw-bold">{analytics?.waiting_patients || 0}</h4>
-                  <p className="mb-0">In Attesa</p>
+                  <h5 className="fw-bold mb-1">{analytics?.waiting_patients || 0}</h5>
+                  <p className="mb-0 small">In Attesa</p>
                 </div>
-                <i className="bi bi-clock display-6"></i>
+                <i className="bi bi-clock h4 mb-0"></i>
               </div>
             </div>
           </div>
         </div>
         
-        <div className="col-md-3">
-          <div className="card bg-info text-white">
-            <div className="card-body">
-              <div className="d-flex justify-content-between">
+        <div className="col-6 col-md-3">
+          <div className="card bg-success text-white h-100">
+            <div className="card-body p-3">
+              <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <h4 className="fw-bold">{analytics?.completed_today || 0}</h4>
-                  <p className="mb-0">Completate Oggi</p>
+                  <h5 className="fw-bold mb-1">{analytics?.completed_today || 0}</h5>
+                  <p className="mb-0 small">Completate</p>
                 </div>
-                <i className="bi bi-check-circle display-6"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="card-title mb-0">
-                <i className="bi bi-gear me-2"></i>
-                Stato Servizi
-              </h5>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-3">
-                  <div className="d-flex align-items-center">
-                    <i className={`bi bi-circle-fill me-2 ${analytics?.mongodb_connected ? 'text-success' : 'text-danger'}`}></i>
-                    <span>MongoDB</span>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="d-flex align-items-center">
-                    <i className={`bi bi-circle-fill me-2 ${analytics?.whisper_available ? 'text-success' : 'text-warning'}`}></i>
-                    <span>Whisper AI</span>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="d-flex align-items-center">
-                    <i className={`bi bi-circle-fill me-2 ${analytics?.nvidia_nim_available ? 'text-success' : 'text-warning'}`}></i>
-                    <span>NVIDIA NIM</span>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <small className="text-muted">
-                    Ultimo aggiornamento: {analytics?.last_updated ? new Date(analytics.last_updated).toLocaleTimeString() : 'N/D'}
-                  </small>
-                </div>
+                <i className="bi bi-check-circle h4 mb-0"></i>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+
+      {/* Patients list - main content */}
       <div className="row">
         <div className="col">
           <PatientsList />
         </div>
       </div>
+      
     </div>
   )
 }

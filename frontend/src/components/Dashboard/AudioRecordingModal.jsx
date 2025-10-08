@@ -183,38 +183,42 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
     <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
       <div className="modal-dialog modal-xl">
         <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">
-              <i className="bi bi-mic me-2"></i>
-              Nuova Visita - {patientDisplayName}
-            </h5>
+          <div className="modal-header flex-column flex-md-row align-items-start align-items-md-center bg-danger bg-opacity-10 border-0" style={{borderRadius: '1.2rem 1.2rem 0 0'}}>
+            <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center w-100">
+              <h2 className="modal-title text-danger fw-bold d-flex align-items-center mb-2 mb-md-0" style={{fontSize: '2rem', letterSpacing: '0.01em'}}>
+                <i className="bi bi-mic me-2 fs-1"></i>
+                NUOVA EMERGENZA
+              </h2>
+              <span className="badge bg-secondary ms-md-3 fs-6 px-3 py-2">{patientDisplayName}</span>
+            </div>
             <button 
               type="button" 
-              className="btn-close" 
+              className="btn-close ms-auto mt-2 mt-md-0" 
               onClick={onClose}
               disabled={isRecording || processAudioMutation.isPending}
+              aria-label="Chiudi"
             ></button>
           </div>
 
           <div className="modal-body">
             {/* Info Paziente */}
-            <div className="card mb-4">
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-3">
+            <div className="card mb-4 border-0 bg-light shadow-sm">
+              <div className="card-body p-3 p-md-4">
+                <div className="row gy-2 gx-3 align-items-center">
+                  <div className="col-12 col-md-3">
                     <strong>Paziente:</strong><br />
                     {patientDisplayName}
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-6 col-md-3">
                     <strong>Codice Fiscale:</strong><br />
                     {patientFiscalCode || 'N/D'}
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-6 col-md-3">
                     <strong>Data di Nascita:</strong><br />
                     {patientBirthDate || 'N/D'}
                   </div>
-                  <div className="col-md-3">
-                    <span className={`badge bg-${getTriageColor(visitData.codice_triage)} fs-6`}>
+                  <div className="col-12 col-md-3 text-md-end mt-2 mt-md-0">
+                    <span className={`badge bg-${getTriageColor(visitData.codice_triage)} fs-6 px-3 py-2`} style={{fontSize: '1.1rem'}}>
                       Triage: {visitData.codice_triage?.toUpperCase()}
                     </span>
                   </div>
@@ -225,7 +229,7 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
             {step === 'record' && (
               <div>
                 {/* Dati pre-visita */}
-                <div className="row mb-4">
+                <div className="row mb-4 gy-3 flex-column flex-md-row">
                   {!patientId && (
                     <div className="col-12">
                       <div className="alert alert-info d-flex align-items-center" role="alert">
@@ -236,30 +240,32 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
                       </div>
                     </div>
                   )}
-                  <div className="col-md-6">
-                    <label htmlFor="sintomi_principali" className="form-label">
+                  <div className="col-12 col-md-6">
+                    <label htmlFor="sintomi_principali" className="form-label fw-bold text-danger">
                       Sintomi Principali
                     </label>
                     <textarea
-                      className="form-control"
+                      className="form-control form-control-lg border-danger border-2"
                       id="sintomi_principali"
                       name="sintomi_principali"
                       rows="3"
                       value={visitData.sintomi_principali}
                       onChange={handleVisitDataChange}
                       placeholder="Descrizione breve dei sintomi principali..."
+                      style={{fontSize: '1.1rem'}}
                     ></textarea>
                   </div>
-                  <div className="col-md-3">
-                    <label htmlFor="codice_triage" className="form-label">
+                  <div className="col-6 col-md-3">
+                    <label htmlFor="codice_triage" className="form-label fw-bold text-danger">
                       Codice Triage
                     </label>
                     <select
-                      className="form-select"
+                      className="form-select form-select-lg border-danger border-2"
                       id="codice_triage"
                       name="codice_triage"
                       value={visitData.codice_triage}
                       onChange={handleVisitDataChange}
+                      style={{fontSize: '1.1rem'}}
                     >
                       <option value="white">⚪ Bianco</option>
                       <option value="green">🟢 Verde</option>
@@ -268,35 +274,37 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
                       <option value="black">⚫ Nero</option>
                     </select>
                   </div>
-                  <div className="col-md-3">
-                    <label htmlFor="note_triage" className="form-label">
+                  <div className="col-6 col-md-3">
+                    <label htmlFor="note_triage" className="form-label fw-bold text-danger">
                       Note Triage
                     </label>
                     <textarea
-                      className="form-control"
+                      className="form-control form-control-lg border-danger border-2"
                       id="note_triage"
                       name="note_triage"
                       rows="3"
                       value={visitData.note_triage}
                       onChange={handleVisitDataChange}
                       placeholder="Note aggiuntive..."
+                      style={{fontSize: '1.1rem'}}
                     ></textarea>
                   </div>
                 </div>
 
                 {/* Controlli Registrazione */}
-                <div className="text-center">
+                <div className="text-center mt-3">
                   {!isRecording ? (
                     <div>
                       <button 
-                        className="btn btn-danger btn-lg"
+                        className="btn btn-danger btn-lg px-5 py-3 fs-3 fw-bold shadow"
                         onClick={startRecording}
+                        style={{borderRadius: '1.5rem', letterSpacing: '0.04em'}}
                       >
                         <i className="bi bi-mic-fill me-2"></i>
-                        Inizia Registrazione
+                        INIZIA REGISTRAZIONE
                       </button>
-                      <p className="text-muted mt-2">
-                        Clicca per iniziare la registrazione della visita medica
+                      <p className="text-danger mt-3 fs-5 fw-semibold">
+                        Premi per iniziare la registrazione della visita/emergenza
                       </p>
                     </div>
                   ) : (
@@ -309,11 +317,12 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
                         <h2 className="font-monospace">{formatTime(recordingTime)}</h2>
                       </div>
                       <button 
-                        className="btn btn-dark btn-lg"
+                        className="btn btn-dark btn-lg px-5 py-3 fs-3 fw-bold shadow"
                         onClick={stopRecording}
+                        style={{borderRadius: '1.5rem', letterSpacing: '0.04em'}}
                       >
                         <i className="bi bi-stop-fill me-2"></i>
-                        Termina Registrazione
+                        TERMINA REGISTRAZIONE
                       </button>
                     </div>
                   )}

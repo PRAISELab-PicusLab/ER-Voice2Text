@@ -54,23 +54,60 @@ const InterventionDetailModal = ({ intervention, show, onHide, onEdit }) => {
   }
 
   const getTriageColor = (code) => {
+    // Mapping per codici triage in italiano e inglese
     const colors = {
-      bianco: 'secondary',
-      verde: 'success',
-      giallo: 'warning',
-      rosso: 'danger',
+      // Italiano
+      'bianco': 'secondary',
+      'verde': 'success', 
+      'giallo': 'warning',
+      'rosso': 'danger',
+      'nero': 'dark',
+      // Inglese (legacy)
+      'white': 'secondary',
+      'green': 'success',
+      'yellow': 'warning', 
+      'red': 'danger',
+      'black': 'dark'
     }
-    return colors[code] || 'secondary'
+    return colors[code?.toLowerCase()] || 'secondary'
   }
 
   const getTriageIcon = (code) => {
+    // Mapping per icone con supporto italiano e inglese
     const icons = {
-      bianco: '⚪',
-      verde: '🟢',
-      giallo: '🟡',
-      rosso: '🔴',
+      // Italiano
+      'bianco': '⚪',
+      'verde': '🟢',
+      'giallo': '🟡', 
+      'rosso': '🔴',
+      'nero': '⚫',
+      // Inglese (legacy)
+      'white': '⚪',
+      'green': '🟢',
+      'yellow': '🟡',
+      'red': '🔴',
+      'black': '⚫'
     }
-    return icons[code] || '⚪'
+    return icons[code?.toLowerCase()] || '⚪'
+  }
+
+  const getTriageDisplayName = (code) => {
+    // Mapping per nomi visualizzati sempre in italiano
+    const displayNames = {
+      // Italiano (mantieni)
+      'bianco': 'BIANCO',
+      'verde': 'VERDE',
+      'giallo': 'GIALLO',
+      'rosso': 'ROSSO', 
+      'nero': 'NERO',
+      // Inglese (converti in italiano)
+      'white': 'BIANCO',
+      'green': 'VERDE',
+      'yellow': 'GIALLO',
+      'red': 'ROSSO',
+      'black': 'NERO'
+    }
+    return displayNames[code?.toLowerCase()] || code?.toUpperCase() || '-'
   }
 
   if (!show || !intervention) return null
@@ -116,8 +153,8 @@ const InterventionDetailModal = ({ intervention, show, onHide, onEdit }) => {
                           <div className="col-md-6">
                             <p><strong>Stato:</strong> 
                               <span className={`badge ms-2 ${
-                                intervention.status === 'processed' ? 'bg-success' : 
-                                intervention.status === 'extracted' ? 'bg-info' : 
+                                intervention.status === 'In Attesa' ? 'bg-warning' : 
+                                intervention.status === 'Completato' ? 'bg-success' : 
                                 'bg-warning'
                               }`}>
                                 {intervention.status}
@@ -126,7 +163,7 @@ const InterventionDetailModal = ({ intervention, show, onHide, onEdit }) => {
                             <p><strong>Codice Triage:</strong> {
                               intervention.triage_code ? (
                                 <span className={`badge ms-2 bg-${getTriageColor(intervention.triage_code)}`}>
-                                  {getTriageIcon(intervention.triage_code)} {intervention.triage_code.toUpperCase()}
+                                  {getTriageIcon(intervention.triage_code)} {getTriageDisplayName(intervention.triage_code)}
                                 </span>
                               ) : '-'
                             }</p>
@@ -242,13 +279,6 @@ const InterventionDetailModal = ({ intervention, show, onHide, onEdit }) => {
                                   )}
                                   {details.clinical_data.clinical_assessment.diagnosis && (
                                     <p><strong>Diagnosi:</strong> {details.clinical_data.clinical_assessment.diagnosis}</p>
-                                  )}
-                                  {details.clinical_data.clinical_assessment.triage_code && (
-                                    <p><strong>Codice Triage:</strong> 
-                                      <span className={`badge ms-2 bg-${getTriageColor(details.clinical_data.clinical_assessment.triage_code)}`}>
-                                        {getTriageIcon(details.clinical_data.clinical_assessment.triage_code)} {details.clinical_data.clinical_assessment.triage_code.toUpperCase()}
-                                      </span>
-                                    </p>
                                   )}
                                 </div>
                                 <div className="col-md-6">

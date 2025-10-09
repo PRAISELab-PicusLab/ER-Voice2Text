@@ -21,6 +21,7 @@ const InterventionsList = ({ onEditIntervention }) => {
     dateFrom: '',
     dateTo: ''
   })
+  const [showFilters, setShowFilters] = useState(true)
 
   const { data: interventionsData, isLoading, error, refetch } = useQuery({
     queryKey: ['all-interventions'],
@@ -222,15 +223,44 @@ const InterventionsList = ({ onEditIntervention }) => {
               <button 
                 className="btn btn-outline-primary btn-sm"
                 onClick={() => refetch()}
+                title="Aggiorna lista interventi"
               >
-                <i className="bi bi-arrow-clockwise"></i>
+                <i className="bi bi-arrow-clockwise me-1"></i>
+                Aggiorna
               </button>
             </div>
+          </div>
+          
+          {/* Header filtri con toggle */}
+          <div className="d-flex justify-content-between align-items-center mt-3">
+            <h6 className="mb-0 text-muted">
+              <i className="bi bi-funnel me-2"></i>
+              Filtri di Ricerca
+              {!showFilters && <small className="text-warning ms-2">(nascosti)</small>}
+            </h6>
+            <button
+              className="btn btn-link btn-sm text-muted text-decoration-none p-0"
+              onClick={() => setShowFilters(!showFilters)}
+              title={showFilters ? "Nascondi filtri" : "Mostra filtri"}
+            >
+              <i className={`bi ${showFilters ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+            </button>
           </div>
         </div>
         
         {/* Sezione filtri */}
-        <div className="card-body border-bottom">
+        <div 
+          className="card-body border-bottom border-light"
+          style={{
+            maxHeight: showFilters ? '500px' : '0px',
+            overflow: 'hidden',
+            opacity: showFilters ? 1 : 0,
+            transform: showFilters ? 'translateY(0)' : 'translateY(-10px)',
+            transition: 'max-height 0.4s ease-in-out, opacity 0.3s ease-in-out 0.1s, transform 0.3s ease-in-out 0.1s, padding 0.3s ease-in-out',
+            paddingTop: showFilters ? '1rem' : '0',
+            paddingBottom: showFilters ? '1rem' : '0'
+          }}
+        >
           <div className="row g-3">
             <div className="col-md-3">
               <label className="form-label small fw-bold">Stato Intervento</label>
@@ -276,9 +306,9 @@ const InterventionsList = ({ onEditIntervention }) => {
               />
             </div>
             
-            <div className="col-md-2 d-flex align-items-end">
+            <div className="col-md-2" style={{ display: 'flex', alignItems: 'end', padding: '10px' }}>
               <button 
-                className="btn btn-outline-secondary w-100"
+                className="btn btn-danger"
                 onClick={resetFilters}
                 title="Reset filtri"
               >
@@ -307,7 +337,7 @@ const InterventionsList = ({ onEditIntervention }) => {
                     <th>Sintomi</th>
                     <th>Stato</th>
                     <th>Dati Clinici</th>
-                    <th>Azioni</th>
+                    <th className="text-end">Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -358,7 +388,7 @@ const InterventionsList = ({ onEditIntervention }) => {
                           </span>
                         )}
                       </td>
-                      <td>
+                      <td className="text-end">
                         <div className="btn-group" role="group">
                           <button
                             className="btn btn-outline-primary btn-sm"

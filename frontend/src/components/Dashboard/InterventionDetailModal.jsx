@@ -55,22 +55,20 @@ const InterventionDetailModal = ({ intervention, show, onHide, onEdit }) => {
 
   const getTriageColor = (code) => {
     const colors = {
-      white: 'secondary',
-      green: 'success',
-      yellow: 'warning',
-      red: 'danger',
-      black: 'dark'
+      bianco: 'secondary',
+      verde: 'success',
+      giallo: 'warning',
+      rosso: 'danger',
     }
     return colors[code] || 'secondary'
   }
 
   const getTriageIcon = (code) => {
     const icons = {
-      white: '⚪',
-      green: '🟢',
-      yellow: '🟡',
-      red: '🔴',
-      black: '⚫'
+      bianco: '⚪',
+      verde: '🟢',
+      giallo: '🟡',
+      rosso: '🔴',
     }
     return icons[code] || '⚪'
   }

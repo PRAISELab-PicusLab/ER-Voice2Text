@@ -117,7 +117,7 @@ class PDFReportService:
         text_start_y = logo_y - 4
         
         c.setFont("Helvetica-Bold", 9)
-        text = "S. Diego Armando"
+        text = "Il San Giacomino"
         text_width = c.stringWidth(text, "Helvetica-Bold", 9)
         c.drawString(center_x - text_width / 2, text_start_y, text)
         
@@ -136,7 +136,7 @@ class PDFReportService:
         # Calcola la larghezza per centrare il testo
         header_lines = [
             "USL FUORIGROTTA - Azienda Sanitaria",
-            "Nuovo ospedale di Fuorigrotta S. Diego Armando", 
+            "Nuovo ospedale di San Giacomo ", 
             "Unità operativa Medicina d'Urgenza Pronto Soccorso"
         ]
         
@@ -148,7 +148,7 @@ class PDFReportService:
         
         # Responsabile (centrato, font più piccolo)
         c.setFont("Helvetica", 10)
-        resp_text = "Responsabile Dott. Antonio Conte"
+        resp_text = "Responsabile Dott. Giacomino Giacomastro"
         resp_width = c.stringWidth(resp_text, "Helvetica", 10)
         resp_x = (width - resp_width) / 2
         c.drawString(resp_x, start_y - (len(header_lines) * 18) - 10, resp_text)

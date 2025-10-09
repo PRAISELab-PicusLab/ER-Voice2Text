@@ -42,7 +42,7 @@ const NewEmergencyPage = () => {
   // Dati iniziali emergenza
   const [emergencyData, setEmergencyData] = useState({
     sintomi_principali: '',
-    codice_triage: 'white',
+    codice_triage: 'bianco',
     note_triage: ''
   })
 
@@ -259,22 +259,20 @@ const NewEmergencyPage = () => {
 
   const getTriageColor = (code) => {
     const colors = {
-      white: 'secondary',
-      green: 'success',
-      yellow: 'warning',
-      red: 'danger',
-      black: 'dark'
+      bianco: 'secondary',
+      verde: 'success',
+      giallo: 'warning',
+      rosso: 'danger'
     }
     return colors[code] || 'secondary'
   }
 
   const getTriageIcon = (code) => {
     const icons = {
-      white: '⚪',
-      green: '🟢',
-      yellow: '🟡',
-      red: '🔴',
-      black: '⚫'
+      bianco: '⚪',
+      verde: '🟢',
+      giallo: '🟡',
+      rosso: '🔴'
     }
     return icons[code] || '⚪'
   }
@@ -423,11 +421,10 @@ const NewEmergencyPage = () => {
                       onChange={handleEmergencyDataChange}
                       style={{ fontSize: '1.1rem' }}
                     >
-                      <option value="white">⚪ Bianco - Non urgente</option>
-                      <option value="green">🟢 Verde - Urgenza minore</option>
-                      <option value="yellow">🟡 Giallo - Urgenza</option>
-                      <option value="red">🔴 Rosso - Emergenza</option>
-                      <option value="black">⚫ Nero - Emergenza assoluta</option>
+                      <option value="bianco">⚪ Bianco - Non urgente</option>
+                      <option value="verde">🟢 Verde - Urgenza minore</option>
+                      <option value="giallo">🟡 Giallo - Urgenza</option>
+                      <option value="rosso">🔴 Rosso - Emergenza</option>
                     </select>
                   </div>
                   <div className="col-12 col-sm-6">
@@ -493,7 +490,7 @@ const NewEmergencyPage = () => {
 
                 {/* Badge triage essenziale */}
                 <div className="mb-3">
-                  <span className={`badge fs-6 px-3 py-2 medical-triage-badge ${getTriageColor(emergencyData.codice_triage) === 'secondary' ? 'text-dark' : 'text-white'}`}
+                  <span className={`badge fs-6 px-3 py-2 medical-triage-badge ${getTriageColor(emergencyData.codice_triage) === 'secondary' ? 'text-dark' : 'text-bianco'}`}
                         style={{
                           backgroundColor: getTriageColor(emergencyData.codice_triage) === 'secondary' ? '#f8f9fa' : undefined,
                           borderColor: getTriageColor(emergencyData.codice_triage) === 'secondary' ? '#dee2e6' : undefined
@@ -865,15 +862,14 @@ const NewEmergencyPage = () => {
                             <label className="form-label fw-bold">Codice Triage:</label>
                             <select
                               className="form-select"
-                              value={extractedData.extracted_data.triage_code || ''}
+                              value={extractedData.extracted_data.triage_code || emergencyData.triage_code || ''}
                               onChange={(e) => handleExtractedDataChange('triage_code', e.target.value)}
                             >
                               <option value="">Seleziona</option>
-                              <option value="white">⚪ Bianco - Non Urgente</option>
-                              <option value="green">🟢 Verde - Poco Urgente</option>
-                              <option value="yellow">🟡 Giallo - Urgente</option>
-                              <option value="red">🔴 Rosso - Molto Urgente</option>
-                              <option value="black">⚫ Nero - Critico</option>
+                              <option value="bianco">⚪ Bianco - Non Urgente</option>
+                              <option value="verde">🟢 Verde - Poco Urgente</option>
+                              <option value="giallo">🟡 Giallo - Urgente</option>
+                              <option value="rosso">🔴 Rosso - Molto Urgente</option>
                             </select>
                           </div>
                           <div className="col-md-6">

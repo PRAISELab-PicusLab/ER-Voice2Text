@@ -111,25 +111,54 @@ const InterventionsList = ({ onEditIntervention }) => {
   }
 
   const getTriageColor = (code) => {
+    // Mapping per codici triage in italiano e inglese
     const colors = {
-      white: 'secondary',
-      green: 'success',
-      yellow: 'warning',
-      red: 'danger',
-      black: 'dark'
+      // Italiano
+      'bianco': 'secondary',
+      'verde': 'success', 
+      'giallo': 'warning',
+      'rosso': 'danger',
+      // Inglese (legacy)
+      'white': 'secondary',
+      'green': 'success',
+      'yellow': 'warning', 
+      'red': 'danger'
     }
-    return colors[code] || 'secondary'
+    return colors[code?.toLowerCase()] || 'secondary'
   }
 
   const getTriageIcon = (code) => {
+    // Mapping per icone con supporto italiano e inglese
     const icons = {
-      white: '⚪',
-      green: '🟢',
-      yellow: '🟡',
-      red: '🔴',
-      black: '⚫'
+      // Italiano
+      'bianco': '⚪',
+      'verde': '🟢',
+      'giallo': '🟡', 
+      'rosso': '🔴',
+      // Inglese (legacy)
+      'white': '⚪',
+      'green': '🟢',
+      'yellow': '🟡',
+      'red': '🔴'
     }
-    return icons[code] || '⚪'
+    return icons[code?.toLowerCase()] || '⚪'
+  }
+
+  const getTriageDisplayName = (code) => {
+    // Mapping per nomi visualizzati sempre in italiano
+    const displayNames = {
+      // Italiano (mantieni)
+      'bianco': 'BIANCO',
+      'verde': 'VERDE',
+      'giallo': 'GIALLO',
+      'rosso': 'ROSSO',
+      // Inglese (converti in italiano)
+      'white': 'BIANCO',
+      'green': 'VERDE',
+      'yellow': 'GIALLO',
+      'red': 'ROSSO'
+    }
+    return displayNames[code?.toLowerCase()] || code?.toUpperCase() || '-'
   }
 
   const handleViewDetails = (intervention) => {
@@ -323,7 +352,7 @@ const InterventionsList = ({ onEditIntervention }) => {
                       <td>
                         {intervention.triage_code ? (
                           <span className={`badge bg-${getTriageColor(intervention.triage_code)}`}>
-                            {getTriageIcon(intervention.triage_code)} {intervention.triage_code.toUpperCase()}
+                            {getTriageIcon(intervention.triage_code)} {getTriageDisplayName(intervention.triage_code)}
                           </span>
                         ) : (
                           <span className="text-muted">-</span>

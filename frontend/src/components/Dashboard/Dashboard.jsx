@@ -1,17 +1,31 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { medicalWorkflowAPI } from '../../services/api'
 import { useAuthStore } from '../../services/authStore'
 import PatientsList from './PatientsList'
+import InterventionsList from './InterventionsList'
 
 const Dashboard = () => {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState('patients')
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ['dashboard-analytics'],
     queryFn: () => medicalWorkflowAPI.getDashboardAnalytics(),
     refetchInterval: 30000,
   })
+
+  const handleEditIntervention = (intervention) => {
+    // Naviga alla pagina nuova emergenza con i dati precaricati
+    navigate('/encounter/new', { 
+      state: { 
+        editMode: true, 
+        interventionData: intervention 
+      } 
+    })
+  }
 
   const getTriageColor = (priority) => {
     const colors = {
@@ -104,10 +118,36 @@ const Dashboard = () => {
       </div>
 
 
-      {/* Patients list - main content */}
+      {/* Navigation tabs */}
+      <div className="row mb-3">
+        <div className="col">
+          <ul className="nav nav-tabs">
+            <li className="nav-item">
+              <button 
+                className={`nav-link ${activeTab === 'patients' ? 'active' : ''}`}
+                onClick={() => setActiveTab('patients')}
+              >
+                <i className="bi bi-people me-2"></i>
+                Pazienti
+              </button>
+            </li>
+            <li className="nav-item">
+              <button 
+                className={`nav-link ${activeTab === 'interventions' ? 'active' : ''}`}
+                onClick={() => setActiveTab('interventions')}
+              >
+                <i className="bi bi-clipboard-data me-2"></i>
+                Tutti gli Interventi
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Main content based on active tab */}
       <div className="row">
         <div className="col">
-          <PatientsList />
+          {activeTab === 'patients' ? <PatientsList /> : <InterventionsList onEditIntervention={handleEditIntervention} />}
         </div>
       </div>
       

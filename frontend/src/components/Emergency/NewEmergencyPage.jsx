@@ -19,9 +19,15 @@ const NewEmergencyPage = () => {
   // Dati del paziente se provenienti dalla lista pazienti
   const patientFromRoute = location.state?.patient
   const isEmergency = location.state?.isEmergency || true
+  
+  // Modalità edit se proveniente da modifica intervento
+  const editMode = location.state?.editMode || false
+  const interventionData = location.state?.interventionData
 
   // Stati principali
-  const [currentStep, setCurrentStep] = useState('setup') // setup, recording, transcribing, editing, extraction, completed
+  const [currentStep, setCurrentStep] = useState(
+    editMode ? 'editing' : 'setup'
+  ) // setup, recording, transcribing, editing, extraction, completed
   const [isRecording, setIsRecording] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [audioBlob, setAudioBlob] = useState(null)
@@ -51,6 +57,29 @@ const NewEmergencyPage = () => {
       }
     }
   }, [])
+
+  // Carica dati intervento in modalità edit
+  useEffect(() => {
+    if (editMode && interventionData) {
+      // Carica i dati dell'intervento esistente
+      setTranscriptId(interventionData.transcript_id)
+      
+      // Carica la trascrizione esistente
+      medicalWorkflowAPI.getInterventionDetails(interventionData.transcript_id)
+        .then(details => {
+          if (details.transcript_text) {
+            setTranscriptText(details.transcript_text)
+            setEditedTranscript(details.transcript_text)
+          }
+          if (details.clinical_data) {
+            setExtractedData({ extracted_data: details.clinical_data })
+          }
+        })
+        .catch(error => {
+          console.error('Errore caricamento dati intervento:', error)
+        })
+    }
+  }, [editMode, interventionData])
 
   // Mutation per processare l'audio completo
   const processAudioMutation = useMutation({
@@ -268,12 +297,48 @@ const NewEmergencyPage = () => {
             ></div>
           </div>
           <div className="d-flex justify-content-between small text-muted">
-            <span className={currentStep === 'setup' ? 'text-danger fw-bold' : ''}>Setup</span>
-            <span className={currentStep === 'recording' ? 'text-danger fw-bold' : ''}>Registrazione</span>
-            <span className={currentStep === 'transcribing' ? 'text-danger fw-bold' : ''}>Trascrizione</span>
-            <span className={currentStep === 'editing' ? 'text-danger fw-bold' : ''}>Modifica</span>
-            <span className={currentStep === 'extraction' ? 'text-danger fw-bold' : ''}>Estrazione</span>
-            <span className={currentStep === 'completed' ? 'text-success fw-bold' : ''}>Completato</span>
+            <span 
+              className={`cursor-pointer ${currentStep === 'setup' ? 'text-danger fw-bold' : ''}`}
+              onClick={() => setCurrentStep('setup')}
+              style={{ cursor: 'pointer' }}
+            >
+              Setup
+            </span>
+            <span 
+              className={`cursor-pointer ${currentStep === 'recording' ? 'text-danger fw-bold' : ''}`}
+              onClick={() => currentStep !== 'recording' && setCurrentStep('recording')}
+              style={{ cursor: currentStep !== 'recording' ? 'pointer' : 'not-allowed' }}
+            >
+              Registrazione
+            </span>
+            <span 
+              className={`cursor-pointer ${currentStep === 'transcribing' ? 'text-danger fw-bold' : ''}`}
+              onClick={() => currentStep !== 'transcribing' && transcriptText && setCurrentStep('transcribing')}
+              style={{ cursor: (currentStep !== 'transcribing' && transcriptText) ? 'pointer' : 'not-allowed' }}
+            >
+              Trascrizione
+            </span>
+            <span 
+              className={`cursor-pointer ${currentStep === 'editing' ? 'text-danger fw-bold' : ''}`}
+              onClick={() => transcriptText && setCurrentStep('editing')}
+              style={{ cursor: transcriptText ? 'pointer' : 'not-allowed' }}
+            >
+              Modifica
+            </span>
+            <span 
+              className={`cursor-pointer ${currentStep === 'extraction' ? 'text-danger fw-bold' : ''}`}
+              onClick={() => extractedData && setCurrentStep('extraction')}
+              style={{ cursor: extractedData ? 'pointer' : 'not-allowed' }}
+            >
+              Estrazione
+            </span>
+            <span 
+              className={`cursor-pointer ${currentStep === 'completed' ? 'text-success fw-bold' : ''}`}
+              onClick={() => pdfUrl && setCurrentStep('completed')}
+              style={{ cursor: pdfUrl ? 'pointer' : 'not-allowed' }}
+            >
+              Completato
+            </span>
           </div>
         </div>
       </div>
@@ -473,79 +538,252 @@ const NewEmergencyPage = () => {
       {currentStep === 'extraction' && extractedData && (
         <div className="row">
           <div className="col-12">
-            <div className="card border-warning">
-              <div className="card-header bg-warning bg-opacity-10">
-                <h4 className="card-title text-warning mb-0">
+            <div className="card border-primary">
+              <div className="card-header bg-primary bg-opacity-10">
+                <h4 className="card-title text-primary mb-0">
                   <i className="bi bi-cpu me-2"></i>
-                  Dati Estratti dal Modello AI - Verifica e Modifica
+                  Dati Clinici Estratti - Verifica e Modifica
                 </h4>
               </div>
               <div className="card-body p-4">
-                <div className="alert alert-warning mb-4">
-                  <i className="bi bi-info-circle me-2"></i>
-                  L'AI ha estratto automaticamente i dati clinici dalla trascrizione. Verifica l'accuratezza e modifica se necessario prima di generare il report PDF.
-                </div>
-                {extractedData.extracted_data && (
-                  <div className="row gy-3">
-                    <div className="col-6">
-                      <label className="form-label fw-bold">Nome:</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={extractedData.extracted_data.first_name || ''}
-                        onChange={(e) => handleExtractedDataChange('first_name', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-6">
-                      <label className="form-label fw-bold">Cognome:</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={extractedData.extracted_data.last_name || ''}
-                        onChange={(e) => handleExtractedDataChange('last_name', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-6">
-                      <label className="form-label fw-bold">Data Nascita:</label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={extractedData.extracted_data.birth_date || ''}
-                        onChange={(e) => handleExtractedDataChange('birth_date', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-6">
-                      <label className="form-label fw-bold">Sesso:</label>
-                      <select
-                        className="form-select"
-                        value={extractedData.extracted_data.gender || ''}
-                        onChange={(e) => handleExtractedDataChange('gender', e.target.value)}
-                      >
-                        <option value="">Seleziona</option>
-                        <option value="M">Maschio</option>
-                        <option value="F">Femmina</option>
-                        <option value="O">Altro</option>
-                      </select>
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label fw-bold">Sintomi:</label>
-                      <textarea
-                        className="form-control"
-                        rows="3"
-                        value={extractedData.extracted_data.symptoms || ''}
-                        onChange={(e) => handleExtractedDataChange('symptoms', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label fw-bold">Diagnosi:</label>
-                      <textarea
-                        className="form-control"
-                        rows="3"
-                        value={extractedData.extracted_data.diagnosis || ''}
-                        onChange={(e) => handleExtractedDataChange('diagnosis', e.target.value)}
-                      />
+                {/* Informazioni sui risultati dell'estrazione */}
+                <div className="row mb-4">
+                  <div className="col-12">
+                    <div className="alert alert-info">
+                      <h5 className="alert-heading">
+                        <i className="bi bi-info-circle me-2"></i>
+                        Risultati Estrazione AI
+                      </h5>
+                      {extractedData.validation_errors && extractedData.validation_errors.length > 0 && (
+                        <div className="mt-2">
+                          <strong>Avvisi di validazione:</strong>
+                          <ul className="mb-0">
+                            {extractedData.validation_errors.map((error, index) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {extractedData.llm_fallback && (
+                        <p className="mb-0 text-warning">
+                          <i className="bi bi-exclamation-triangle me-1"></i>
+                          <strong>Modalità fallback attivata:</strong> {extractedData.llm_warnings?.join(', ')}
+                        </p>
+                      )}
+                      <p className="mb-0 text-muted">
+                        <i className="bi bi-lightbulb me-1"></i>
+                        L'AI ha estratto automaticamente i dati clinici dalla trascrizione. Verifica l'accuratezza e modifica se necessario.
+                      </p>
                     </div>
                   </div>
+                </div>
+
+                {extractedData.extracted_data && (
+                  <>
+                    {/* Dati del paziente */}
+                    <div className="row mb-4">
+                      <div className="col-12">
+                        <h5 className="text-primary mb-3">
+                          <i className="bi bi-person me-2"></i>
+                          Informazioni Paziente
+                        </h5>
+                        <div className="row g-3">
+                          <div className="col-md-4">
+                            <label className="form-label fw-bold">Nome:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.first_name || ''}
+                              onChange={(e) => handleExtractedDataChange('first_name', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-md-4">
+                            <label className="form-label fw-bold">Cognome:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.last_name || ''}
+                              onChange={(e) => handleExtractedDataChange('last_name', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-md-4">
+                            <label className="form-label fw-bold">Età:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.age || ''}
+                              onChange={(e) => handleExtractedDataChange('age', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-md-4">
+                            <label className="form-label fw-bold">Data Nascita:</label>
+                            <input
+                              type="date"
+                              className="form-control"
+                              value={extractedData.extracted_data.birth_date || ''}
+                              onChange={(e) => handleExtractedDataChange('birth_date', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-md-4">
+                            <label className="form-label fw-bold">Luogo Nascita:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.birth_place || ''}
+                              onChange={(e) => handleExtractedDataChange('birth_place', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-md-4">
+                            <label className="form-label fw-bold">Sesso:</label>
+                            <select
+                              className="form-select"
+                              value={extractedData.extracted_data.gender || ''}
+                              onChange={(e) => handleExtractedDataChange('gender', e.target.value)}
+                            >
+                              <option value="">Seleziona</option>
+                              <option value="M">Maschio</option>
+                              <option value="F">Femmina</option>
+                              <option value="O">Altro</option>
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">Telefono:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.phone || ''}
+                              onChange={(e) => handleExtractedDataChange('phone', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">Città Residenza:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.residence_city || ''}
+                              onChange={(e) => handleExtractedDataChange('residence_city', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Parametri vitali */}
+                    <div className="row mb-4">
+                      <div className="col-12">
+                        <h5 className="text-success mb-3">
+                          <i className="bi bi-heart-pulse me-2"></i>
+                          Parametri Vitali
+                        </h5>
+                        <div className="row g-3">
+                          <div className="col-md-3">
+                            <label className="form-label fw-bold">Pressione Arteriosa:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.blood_pressure || ''}
+                              onChange={(e) => handleExtractedDataChange('blood_pressure', e.target.value)}
+                              placeholder="es. 120/80"
+                            />
+                          </div>
+                          <div className="col-md-3">
+                            <label className="form-label fw-bold">Frequenza Cardiaca:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.heart_rate || ''}
+                              onChange={(e) => handleExtractedDataChange('heart_rate', e.target.value)}
+                              placeholder="bpm"
+                            />
+                          </div>
+                          <div className="col-md-3">
+                            <label className="form-label fw-bold">Temperatura:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.temperature || ''}
+                              onChange={(e) => handleExtractedDataChange('temperature', e.target.value)}
+                              placeholder="°C"
+                            />
+                          </div>
+                          <div className="col-md-3">
+                            <label className="form-label fw-bold">Saturazione O2:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.oxygen_saturation || ''}
+                              onChange={(e) => handleExtractedDataChange('oxygen_saturation', e.target.value)}
+                              placeholder="%"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Informazioni cliniche */}
+                    <div className="row mb-4">
+                      <div className="col-12">
+                        <h5 className="text-warning mb-3">
+                          <i className="bi bi-clipboard-pulse me-2"></i>
+                          Informazioni Cliniche
+                        </h5>
+                        <div className="row g-3">
+                          <div className="col-12">
+                            <label className="form-label fw-bold">Sintomi:</label>
+                            <textarea
+                              className="form-control"
+                              rows="3"
+                              value={extractedData.extracted_data.symptoms || ''}
+                              onChange={(e) => handleExtractedDataChange('symptoms', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-12">
+                            <label className="form-label fw-bold">Diagnosi Differenziale:</label>
+                            <textarea
+                              className="form-control"
+                              rows="3"
+                              value={extractedData.extracted_data.diagnosis || ''}
+                              onChange={(e) => handleExtractedDataChange('diagnosis', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">Codice Triage:</label>
+                            <select
+                              className="form-select"
+                              value={extractedData.extracted_data.triage_code || ''}
+                              onChange={(e) => handleExtractedDataChange('triage_code', e.target.value)}
+                            >
+                              <option value="">Seleziona</option>
+                              <option value="white">⚪ Bianco - Non Urgente</option>
+                              <option value="green">🟢 Verde - Poco Urgente</option>
+                              <option value="yellow">🟡 Giallo - Urgente</option>
+                              <option value="red">🔴 Rosso - Molto Urgente</option>
+                              <option value="black">⚫ Nero - Critico</option>
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">Modalità Accesso:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.access_mode || ''}
+                              onChange={(e) => handleExtractedDataChange('access_mode', e.target.value)}
+                              placeholder="es. Ambulanza, Autonomo"
+                            />
+                          </div>
+                          <div className="col-12">
+                            <label className="form-label fw-bold">Note Mediche:</label>
+                            <textarea
+                              className="form-control"
+                              rows="4"
+                              value={extractedData.extracted_data.medical_notes || ''}
+                              onChange={(e) => handleExtractedDataChange('medical_notes', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <div className="text-center mt-4">

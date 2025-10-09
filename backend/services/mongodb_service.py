@@ -55,6 +55,68 @@ class MongoDBService:
         """Verifica connessione MongoDB"""
         return self.connected
     
+    def save_patient_visit_transcript_only(self, encounter_id: str, patient_id: str, doctor_id: str, 
+                                          audio_file_path: str, transcript_text: str, 
+                                          triage_code: str = None, symptoms: str = None, 
+                                          triage_notes: str = None) -> Optional[str]:
+        """
+        Salva una nuova visita paziente con SOLO trascrizione (senza dati clinici estratti)
+        
+        Args:
+            encounter_id: ID encounter Django
+            patient_id: ID paziente Django
+            doctor_id: ID medico Django
+            audio_file_path: Path file audio
+            transcript_text: Testo trascrizione
+            triage_code: Codice triage (white, green, yellow, red, black)
+            symptoms: Sintomi principali
+            triage_notes: Note del triage
+            
+        Returns:
+            ID del transcript MongoDB creato
+        """
+        if not self.connected:
+            logger.error("MongoDB non connesso")
+            return None
+        
+        try:
+            # Crea documento AudioTranscript con dati iniziali del triage
+            transcript_doc = AudioTranscript()
+            transcript_doc.encounter_id = encounter_id
+            transcript_doc.patient_id = patient_id
+            transcript_doc.doctor_id = doctor_id
+            transcript_doc.audio_file_path = audio_file_path
+            transcript_doc.full_transcript = transcript_text
+            transcript_doc.processing_status = 'transcribed'  # Solo trascritto, non estratto
+            
+            # Se abbiamo dati iniziali del triage, crea una struttura clinica di base
+            if triage_code or symptoms or triage_notes:
+                clinical_data = ClinicalData()
+                
+                # Crea assessment con i dati iniziali del triage
+                clinical_assessment = ClinicalAssessment()
+                if triage_code:
+                    clinical_assessment.triage_code = triage_code
+                if symptoms:
+                    clinical_assessment.symptoms = symptoms
+                if triage_notes:
+                    clinical_assessment.history = triage_notes  # Salva le note nei dati storici
+                
+                clinical_data.clinical_assessment = clinical_assessment
+                transcript_doc.clinical_data = clinical_data
+            else:
+                transcript_doc.clinical_data = None  # Nessun dato clinico inizialmente
+            
+            # Salva il documento
+            transcript_doc.save()
+            
+            logger.info(f"Transcript salvato con ID: {transcript_doc.transcript_id}, triage: {triage_code}")
+            return str(transcript_doc.transcript_id)
+            
+        except Exception as e:
+            logger.error(f"Errore salvataggio transcript: {e}")
+            return None
+    
     def save_patient_visit(self, encounter_id: str, patient_id: str, doctor_id: str, 
                           audio_file_path: str, transcript_text: str, 
                           clinical_data: Dict[str, Any]) -> Optional[str]:
@@ -463,37 +525,269 @@ class MongoDBService:
         Aggiorna i dati clinici associati al transcript
         """
         try:
-            # Aggiorna i dati del paziente
             transcript = AudioTranscript.objects(transcript_id=transcript_id).first()
             if not transcript:
                 logger.warning(f"Transcript {transcript_id} non trovato per aggiornamento dati clinici")
                 return False
             
-            # Aggiorna MedicalPatientData
-            patient_data = MedicalPatientData.objects(transcript=transcript).first()
-            if not patient_data:
-                patient_data = MedicalPatientData(transcript=transcript)
+            # Crea o aggiorna i dati clinici completi
+            if not transcript.clinical_data:
+                transcript.clinical_data = ClinicalData()
             
-            patient_data.first_name = clinical_dict.get('first_name', '')
-            patient_data.last_name = clinical_dict.get('last_name', '')
-            patient_data.birth_date = clinical_dict.get('birth_date', '')
-            patient_data.gender = clinical_dict.get('gender', '')
-            patient_data.save()
+            cd = transcript.clinical_data
             
-            # Aggiorna ClinicalAssessment
-            clinical_assessment = ClinicalAssessment.objects(transcript=transcript).first()
-            if not clinical_assessment:
-                clinical_assessment = ClinicalAssessment(transcript=transcript)
+            # Aggiorna dati paziente
+            if not cd.patient_data:
+                cd.patient_data = MedicalPatientData()
             
-            clinical_assessment.symptoms = clinical_dict.get('symptoms', '')
-            clinical_assessment.assessment = clinical_dict.get('diagnosis', '')
-            clinical_assessment.save()
+            pd = cd.patient_data
+            pd.first_name = clinical_dict.get('first_name', '')
+            pd.last_name = clinical_dict.get('last_name', '')
+            pd.birth_date = clinical_dict.get('birth_date', '')
+            pd.birth_place = clinical_dict.get('birth_place', '')
+            pd.gender = clinical_dict.get('gender', '')
+            pd.phone = clinical_dict.get('phone', '')
+            pd.residence_city = clinical_dict.get('residence_city', '')
+            pd.residence_address = clinical_dict.get('residence_address', '')
+            pd.access_mode = clinical_dict.get('access_mode', '')
+            
+            # Gestisci età come int
+            age_value = clinical_dict.get('age')
+            if age_value and age_value != '':
+                try:
+                    pd.age = int(age_value)
+                except (ValueError, TypeError):
+                    pd.age = None
+            
+            # Aggiorna parametri vitali
+            if not cd.vital_signs:
+                cd.vital_signs = VitalSigns()
+            
+            vs = cd.vital_signs
+            vs.heart_rate = clinical_dict.get('heart_rate', '')
+            vs.blood_pressure = clinical_dict.get('blood_pressure', '')
+            vs.oxygenation = clinical_dict.get('oxygen_saturation', '')
+            vs.blood_glucose = clinical_dict.get('blood_glucose', '')
+            
+            # Gestisci temperatura come float
+            temp_value = clinical_dict.get('temperature')
+            if temp_value and temp_value != '':
+                try:
+                    vs.temperature = float(temp_value)
+                except (ValueError, TypeError):
+                    vs.temperature = None
+            
+            # Aggiorna valutazione clinica
+            if not cd.clinical_assessment:
+                cd.clinical_assessment = ClinicalAssessment()
+            
+            ca = cd.clinical_assessment
+            ca.symptoms = clinical_dict.get('symptoms', '')
+            ca.assessment = clinical_dict.get('diagnosis', '')
+            ca.triage_code = clinical_dict.get('triage_code', '')
+            ca.skin_state = clinical_dict.get('skin_state', '')
+            ca.consciousness_state = clinical_dict.get('consciousness_state', '')
+            ca.pupils_state = clinical_dict.get('pupils_state', '')
+            ca.respiratory_state = clinical_dict.get('respiratory_state', '')
+            ca.history = clinical_dict.get('history', '')
+            ca.medications_taken = clinical_dict.get('medications_taken', '')
+            ca.medical_actions = clinical_dict.get('medical_actions', '')
+            ca.plan = clinical_dict.get('plan', '')
+            ca.medical_notes = clinical_dict.get('medical_notes', '')
+            
+            # Aggiorna status transcript
+            transcript.processing_status = 'extracted'
+            transcript.save()
             
             logger.info(f"Dati clinici aggiornati per transcript {transcript_id}")
             return True
             
         except Exception as e:
             logger.error(f"Errore aggiornamento dati clinici per transcript {transcript_id}: {e}")
+            return False
+    
+    def get_all_visits_summary(self) -> List[Dict[str, Any]]:
+        """
+        Recupera una lista riassuntiva di tutte le visite/interventi
+        
+        Returns:
+            Lista di dizionari con informazioni riassuntive
+        """
+        if not self.connected:
+            return []
+        
+        try:
+            transcripts = AudioTranscript.objects().order_by('-created_at')
+            
+            visits_summary = []
+            for transcript in transcripts:
+                cd = transcript.clinical_data if transcript.clinical_data else None
+                pd = cd.patient_data if cd and cd.patient_data else None
+                ca = cd.clinical_assessment if cd and cd.clinical_assessment else None
+                
+                # Mapping degli stati per il frontend
+                status_mapping = {
+                    'pending': 'In Attesa',
+                    'transcribing': 'In Attesa', 
+                    'transcribed': 'In Attesa',
+                    'extracting': 'In Attesa',
+                    'extracted': 'Completato',
+                    'validated': 'Completato',
+                    'error': 'In Attesa',
+                    'processed': 'Completato'
+                }
+                
+                raw_status = transcript.processing_status or 'processed'
+                display_status = status_mapping.get(raw_status, 'In Attesa')
+                
+                visit_info = {
+                    'transcript_id': transcript.transcript_id,
+                    'encounter_id': transcript.encounter_id,
+                    'patient_id': transcript.patient_id,
+                    'doctor_id': transcript.doctor_id,
+                    'visit_date': transcript.created_at.strftime('%d/%m/%Y'),
+                    'visit_time': transcript.created_at.strftime('%H:%M'),
+                    'patient_name': f"{pd.first_name or ''} {pd.last_name or ''}".strip() if pd else 'Paziente Anonimo',
+                    'triage_code': ca.triage_code if ca else '',
+                    'symptoms': ca.symptoms[:100] + '...' if ca and ca.symptoms and len(ca.symptoms) > 100 else (ca.symptoms if ca else ''),
+                    'status': display_status,
+                    'raw_status': raw_status,  # Mantieni lo stato originale per debug
+                    'has_clinical_data': bool(cd),
+                    'created_at': transcript.created_at.isoformat()
+                }
+                
+                visits_summary.append(visit_info)
+            
+            return visits_summary
+            
+        except Exception as e:
+            logger.error(f"Errore recupero lista visite: {e}")
+            return []
+    
+    def get_visit_data(self, transcript_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Recupera i dati completi di una visita/transcript
+        
+        Args:
+            transcript_id: ID del transcript
+            
+        Returns:
+            Dizionario con i dati della visita o None se non trovato
+        """
+        if not self.connected:
+            return None
+        
+        try:
+            transcript = AudioTranscript.objects(transcript_id=transcript_id).first()
+            
+            if not transcript:
+                logger.warning(f"Transcript {transcript_id} non trovato")
+                return None
+            
+            cd = transcript.clinical_data if transcript.clinical_data else None
+            pd = cd.patient_data if cd and cd.patient_data else None
+            vs = cd.vital_signs if cd and cd.vital_signs else None
+            ca = cd.clinical_assessment if cd and cd.clinical_assessment else None
+            
+            visit_data = {
+                'transcript_id': transcript.transcript_id,
+                'encounter_id': transcript.encounter_id,
+                'patient_id': transcript.patient_id,
+                'doctor_id': transcript.doctor_id,
+                'audio_file_path': transcript.audio_file_path,
+                'transcript_text': transcript.full_transcript,
+                'processing_status': transcript.processing_status,
+                'created_at': transcript.created_at.isoformat(),
+                'has_clinical_data': bool(cd),
+                'clinical_data': {}
+            }
+            
+            # Aggiungi dati clinici se presenti
+            if cd:
+                clinical_data = {}
+                
+                if pd:
+                    clinical_data['patient_data'] = {
+                        'first_name': pd.first_name or '',
+                        'last_name': pd.last_name or '',
+                        'age': pd.age or '',
+                        'gender': pd.gender or '',
+                        'birth_date': pd.birth_date or '',
+                        'birth_place': pd.birth_place or '',
+                        'residence_city': pd.residence_city or '',
+                        'residence_address': pd.residence_address or '',
+                        'phone': pd.phone or '',
+                        'access_mode': pd.access_mode or ''
+                    }
+                
+                if vs:
+                    clinical_data['vital_signs'] = {
+                        'heart_rate': vs.heart_rate or '',
+                        'blood_pressure': vs.blood_pressure or '',
+                        'temperature': vs.temperature or '',
+                        'oxygen_saturation': vs.oxygenation or '',  # mapping per compatibilità frontend
+                        'oxygenation': vs.oxygenation or '',
+                        'blood_glucose': vs.blood_glucose or ''
+                    }
+                
+                if ca:
+                    clinical_data['clinical_assessment'] = {
+                        'symptoms': ca.symptoms or '',
+                        'diagnosis': ca.assessment or '',  # mapping per compatibilità frontend
+                        'assessment': ca.assessment or '',
+                        'treatment': ca.medical_actions or '',  # mapping per compatibilità frontend
+                        'medical_notes': ca.plan or '',  # mapping per compatibilità frontend
+                        'triage_code': ca.triage_code or '',
+                        'skin_state': ca.skin_state or '',
+                        'consciousness_state': ca.consciousness_state or '',
+                        'pupils_state': ca.pupils_state or '',
+                        'respiratory_state': ca.respiratory_state or '',
+                        'history': ca.history or '',
+                        'medications_taken': ca.medications_taken or '',
+                        'medical_actions': ca.medical_actions or '',
+                        'plan': ca.plan or ''
+                    }
+                
+                visit_data['clinical_data'] = clinical_data
+            
+            return visit_data
+            
+        except Exception as e:
+            logger.error(f"Errore recupero dati visita {transcript_id}: {e}")
+            return None
+
+    def delete_visit(self, transcript_id: str) -> bool:
+        """
+        Elimina una visita da MongoDB
+        
+        Args:
+            transcript_id: ID del transcript da eliminare
+            
+        Returns:
+            True se eliminazione riuscita, False altrimenti
+        """
+        if not self.connected:
+            return False
+        
+        try:
+            # Trova il transcript
+            transcript = AudioTranscript.objects(transcript_id=transcript_id).first()
+            
+            if not transcript:
+                logger.warning(f"Transcript non trovato per eliminazione: {transcript_id}")
+                return False
+            
+            # Elimina eventuali report clinici associati
+            ClinicalReport.objects(transcript_id=transcript_id).delete()
+            
+            # Elimina il transcript (i dati clinici embedded vengono eliminati automaticamente)
+            transcript.delete()
+            
+            logger.info(f"Visita eliminata con successo: {transcript_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Errore eliminazione visita {transcript_id}: {e}")
             return False
 
 

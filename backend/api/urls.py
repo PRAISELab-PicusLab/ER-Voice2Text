@@ -13,7 +13,11 @@ from .medical_workflow_views import (
     generate_pdf_report,
     download_pdf_report,
     transcript_details,
-    extract_clinical_data_llm
+    extract_clinical_data_llm,
+    all_interventions_list,
+    intervention_details,
+    resume_intervention,
+    delete_intervention
 )
 
 router = DefaultRouter()
@@ -35,4 +39,8 @@ urlpatterns = [
     path('reports/<str:transcript_id>/download/', download_pdf_report, name='download-pdf-report'),
     path('transcripts/<str:transcript_id>/details/', transcript_details, name='transcript-details'),
     path('transcripts/<str:transcript_id>/extract_clinical_data/', extract_clinical_data_llm, name='extract-clinical-data-llm'),
+    path('interventions/list/', all_interventions_list, name='all-interventions-list'),
+    path('interventions/<str:transcript_id>/details/', intervention_details, name='intervention-details'),
+    path('interventions/<str:transcript_id>/resume/', resume_intervention, name='resume-intervention'),
+    path('interventions/<str:transcript_id>/delete/', delete_intervention, name='delete-intervention'),
 ]

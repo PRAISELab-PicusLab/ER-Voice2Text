@@ -373,7 +373,7 @@ export const medicalWorkflowAPI = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 120000, // 2 minuti per workflow completo
+      timeout: 300000, // 5 minuti per workflow completo
       onUploadProgress: (progressEvent) => {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
         console.log(`Upload progress: ${percentCompleted}%`)
@@ -518,9 +518,40 @@ export const medicalWorkflowAPI = {
     return response.data
   },
 
+  // Estrai dati clinici da transcript
+  extractClinicalData: async (transcriptId, editedTranscript = null) => {
+    const payload = editedTranscript ? { transcript_text: editedTranscript } : {}
+    const response = await apiClient.post(`/api/transcripts/${transcriptId}/extract_clinical_data/`, payload)
+    return response.data
+  },
+
   // Dettagli transcript
   getTranscriptDetails: async (transcriptId) => {
     const response = await apiClient.get(`/api/transcripts/${transcriptId}/details/`)
+    return response.data
+  },
+
+  // Lista di tutti gli interventi
+  getAllInterventions: async () => {
+    const response = await apiClient.get('/api/interventions/list/')
+    return response.data
+  },
+
+  // Dettagli completi di un intervento
+  getInterventionDetails: async (transcriptId) => {
+    const response = await apiClient.get(`/api/interventions/${transcriptId}/details/`)
+    return response.data
+  },
+
+  // Elimina un intervento
+  deleteIntervention: async (transcriptId) => {
+    const response = await apiClient.delete(`/api/interventions/${transcriptId}/delete/`)
+    return response.data
+  },
+
+  // Elimina un intervento
+  deleteIntervention: async (transcriptId) => {
+    const response = await apiClient.delete(`/api/interventions/${transcriptId}/delete/`)
     return response.data
   }
 }

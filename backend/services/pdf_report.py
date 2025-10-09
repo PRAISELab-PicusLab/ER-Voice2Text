@@ -50,8 +50,8 @@ class PDFReportService:
             # Genera intestazione
             self._draw_header(c, width, height)
             
-            # Posizione iniziale per contenuto
-            y = height - 180
+            # Posizione iniziale per contenuto (più spazio per l'header)
+            y = height - 220
             
             # Informazioni paziente
             y = self._draw_patient_info(c, report_data, margin_x, y, width, line_height)
@@ -130,14 +130,31 @@ class PDFReportService:
         text_width3 = c.stringWidth(text3, "Helvetica", 6)
         c.drawString(center_x - text_width3 / 2, text_start_y - 16, text3)
         
-        # Intestazioni principali
+        # Intestazioni principali (centrate)
         c.setFont("Helvetica-Bold", 12)
-        c.drawString(50, height - 120, "USL FUORIGROTTA - Azienda Sanitaria")
-        c.drawString(50, height - 140, "Nuovo ospedale di Fuorigrotta S. Diego Armando")
-        c.drawString(50, height - 160, "Unità operativa Medicina d'Urgenza Pronto Soccorso")
         
+        # Calcola la larghezza per centrare il testo
+        header_lines = [
+            "USL FUORIGROTTA - Azienda Sanitaria",
+            "Nuovo ospedale di Fuorigrotta S. Diego Armando", 
+            "Unità operativa Medicina d'Urgenza Pronto Soccorso"
+        ]
+        
+        start_y = height - 120
+        for i, line in enumerate(header_lines):
+            text_width = c.stringWidth(line, "Helvetica-Bold", 12)
+            x_center = (width - text_width) / 2  # Centra il testo
+            c.drawString(x_center, start_y - (i * 18), line)
+        
+        # Responsabile (centrato, font più piccolo)
         c.setFont("Helvetica", 10)
-        c.drawString(50, height - 175, "Responsabile Dott. Antonio Conte")
+        resp_text = "Responsabile Dott. Antonio Conte"
+        resp_width = c.stringWidth(resp_text, "Helvetica", 10)
+        resp_x = (width - resp_width) / 2
+        c.drawString(resp_x, start_y - (len(header_lines) * 18) - 10, resp_text)
+        
+        # Linea separatrice
+        c.line(50, height - 200, width - 50, height - 200)
     
     def _draw_patient_info(self, c, data, x, y, width, line_height):
         """Disegna informazioni paziente"""
@@ -313,19 +330,42 @@ class PDFReportService:
         c.drawString(width - 200, footer_y + 20, "Firma del medico")
         c.drawString(width - 200, footer_y, "_" * 30)
     
-    def get_report_path(self, encounter_id: str, report_type: str = "medical") -> str:
+    def get_report_path(self, encounter_id: str, report_type: str = "medical", 
+                       patient_name: str = "", visit_date: str = "") -> str:
         """
-        Genera il path per salvare il report PDF
+        Genera il path per salvare il report PDF con nome strutturato
         
         Args:
             encounter_id: ID encounter
             report_type: Tipo di report
+            patient_name: Nome del paziente per il filename
+            visit_date: Data della visita per il filename
             
         Returns:
             Path completo del file PDF
         """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"report_{report_type}_{encounter_id}_{timestamp}.pdf"
+        # Pulisci il nome del paziente per il filename
+        clean_name = ""
+        if patient_name:
+            # Rimuovi caratteri non validi per filename
+            import re
+            clean_name = re.sub(r'[^\w\s-]', '', patient_name).strip()
+            clean_name = re.sub(r'[-\s]+', '_', clean_name)
+        
+        # Pulisci la data per il filename
+        clean_date = ""
+        if visit_date:
+            # Rimuovi caratteri non validi
+            clean_date = re.sub(r'[^\d]', '', visit_date)
+        
+        # Costruisci il nome del file
+        if clean_name and clean_date:
+            filename = f"Report_{clean_name}_{clean_date}.pdf"
+        elif clean_name:
+            filename = f"Report_{clean_name}_{encounter_id}.pdf"
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"report_{report_type}_{encounter_id}_{timestamp}.pdf"
         
         reports_dir = os.path.join(self.media_root, "reports")
         os.makedirs(reports_dir, exist_ok=True)

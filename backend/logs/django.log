@@ -635,3 +635,284 @@ Not Found: /api/patients/list/
 "OPTIONS /api/patients/list/?filter=completed HTTP/1.1" 200 0
 Not Found: /api/patients/list/
 "GET /api/patients/list/?filter=completed HTTP/1.1" 404 25
+Watching for file changes with StatReloader
+"OPTIONS /api/patients/list/?filter=all HTTP/1.1" 200 0
+"OPTIONS /api/dashboard/analytics/ HTTP/1.1" 200 0
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+"OPTIONS /api/visits/process-audio/ HTTP/1.1" 200 0
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"POST /api/visits/process-audio/ HTTP/1.1" 200 2060
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 288
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Watching for file changes with StatReloader
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+C:\Users\giuse\Desktop\BRO\ER-Voice2Text\backend\api\medical_workflow_views.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+- Broken pipe from ('127.0.0.1', 53825)
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Internal Server Error: /api/visits/process-audio/
+"POST /api/visits/process-audio/ HTTP/1.1" 500 123
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+C:\Users\giuse\Desktop\BRO\ER-Voice2Text\backend\api\medical_workflow_views.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"POST /api/visits/process-audio/ HTTP/1.1" 200 2010
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"OPTIONS /api/reports/cfd1b0ef-bee9-40c3-878e-8e309be7446d/generate/ HTTP/1.1" 200 0
+Forbidden: /api/reports/cfd1b0ef-bee9-40c3-878e-8e309be7446d/generate/
+"POST /api/reports/cfd1b0ef-bee9-40c3-878e-8e309be7446d/generate/ HTTP/1.1" 403 69
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+C:\Users\giuse\Desktop\BRO\ER-Voice2Text\backend\api\medical_workflow_views.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Forbidden: /api/reports/cfd1b0ef-bee9-40c3-878e-8e309be7446d/generate/
+"POST /api/reports/cfd1b0ef-bee9-40c3-878e-8e309be7446d/generate/ HTTP/1.1" 403 69
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"POST /api/visits/process-audio/ HTTP/1.1" 200 1989
+"OPTIONS /api/reports/e7eb7bfc-8ee6-4369-8bd4-11d9114270a8/generate/ HTTP/1.1" 200 0
+Forbidden: /api/reports/e7eb7bfc-8ee6-4369-8bd4-11d9114270a8/generate/
+"POST /api/reports/e7eb7bfc-8ee6-4369-8bd4-11d9114270a8/generate/ HTTP/1.1" 403 69
+Forbidden: /api/reports/e7eb7bfc-8ee6-4369-8bd4-11d9114270a8/generate/
+"POST /api/reports/e7eb7bfc-8ee6-4369-8bd4-11d9114270a8/generate/ HTTP/1.1" 403 69
+Forbidden: /api/reports/e7eb7bfc-8ee6-4369-8bd4-11d9114270a8/generate/
+"POST /api/reports/e7eb7bfc-8ee6-4369-8bd4-11d9114270a8/generate/ HTTP/1.1" 403 69
+Forbidden: /api/reports/e7eb7bfc-8ee6-4369-8bd4-11d9114270a8/generate/
+"POST /api/reports/e7eb7bfc-8ee6-4369-8bd4-11d9114270a8/generate/ HTTP/1.1" 403 69
+C:\Users\giuse\Desktop\BRO\ER-Voice2Text\backend\api\medical_workflow_views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\giuse\Desktop\BRO\ER-Voice2Text\backend\api\urls.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\giuse\Desktop\BRO\ER-Voice2Text\backend\services\mongodb_service.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"GET /api/dashboard/analytics/ HTTP/1.1" 200 277
+"POST /api/visits/process-audio/ HTTP/1.1" 200 1917
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+Not Found: /api/patients/list/
+"GET /api/patients/list/?filter=all HTTP/1.1" 404 25
+"POST /api/visits/process-audio/ HTTP/1.1" 200 1937

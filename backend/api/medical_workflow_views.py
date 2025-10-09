@@ -466,26 +466,36 @@ def generate_pdf_report(request, transcript_id):
     Endpoint per generare report PDF da transcript MongoDB
     """
     try:
+        logger.info(f"Generazione PDF richiesta per transcript_id: {transcript_id}")
+        
         # Recupera contenuto report da MongoDB
         report_content = mongodb_service.generate_report_content(transcript_id)
         
         if not report_content:
+            logger.error(f"Report content non trovato per transcript_id: {transcript_id}")
             return Response(
                 {'error': 'Transcript non trovato o dati insufficienti'}, 
                 status=status.HTTP_404_NOT_FOUND
             )
         
+        logger.info(f"Report content recuperato per transcript_id: {transcript_id}")
+        
         # Genera PDF
         encounter_id = report_content.get('encounter_id', transcript_id)
         pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical')
         
+        logger.info(f"Generando PDF in: {pdf_path}")
+        
         success = pdf_report_service.generate_medical_report(report_content, pdf_path)
         
         if not success:
+            logger.error(f"Errore generazione PDF per transcript_id: {transcript_id}")
             return Response(
                 {'error': 'Errore generazione PDF'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+        logger.info(f"PDF generato con successo per transcript_id: {transcript_id}")
         
         # Restituisci path relativo per download
         relative_path = os.path.relpath(pdf_path, settings.MEDIA_ROOT)
@@ -498,7 +508,7 @@ def generate_pdf_report(request, transcript_id):
         })
         
     except Exception as e:
-        logger.error(f"Errore generazione PDF per transcript {transcript_id}: {e}")
+        logger.error(f"Errore generazione PDF per transcript {transcript_id}: {e}", exc_info=True)
         return Response(
             {'error': 'Errore generazione report PDF'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -512,20 +522,32 @@ def download_pdf_report(request, transcript_id):
     Endpoint per download diretto del report PDF
     """
     try:
+        logger.info(f"Download PDF richiesto per transcript_id: {transcript_id}")
+        
         # Genera PDF se non esiste
         report_content = mongodb_service.generate_report_content(transcript_id)
         
         if not report_content:
+            logger.error(f"Report content non trovato per transcript_id: {transcript_id}")
             return HttpResponse("Report non trovato", status=404)
+        
+        logger.info(f"Report content trovato per transcript_id: {transcript_id}")
         
         encounter_id = report_content.get('encounter_id', transcript_id)
         pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical')
         
+        logger.info(f"PDF path: {pdf_path}")
+        
         # Genera PDF se non esiste già
         if not os.path.exists(pdf_path):
+            logger.info(f"PDF non esiste, generando: {pdf_path}")
             success = pdf_report_service.generate_medical_report(report_content, pdf_path)
             if not success:
+                logger.error(f"Errore generazione PDF per transcript_id: {transcript_id}")
                 return HttpResponse("Errore generazione PDF", status=500)
+            logger.info(f"PDF generato con successo: {pdf_path}")
+        else:
+            logger.info(f"PDF già esistente: {pdf_path}")
         
         # Download del file
         response = FileResponse(
@@ -538,10 +560,11 @@ def download_pdf_report(request, transcript_id):
         
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
+        logger.info(f"PDF download completato per transcript_id: {transcript_id}")
         return response
         
     except Exception as e:
-        logger.error(f"Errore download PDF per transcript {transcript_id}: {e}")
+        logger.error(f"Errore download PDF per transcript {transcript_id}: {e}", exc_info=True)
         return HttpResponse("Errore download PDF", status=500)
 
 
@@ -573,5 +596,72 @@ def transcript_details(request, transcript_id):
         logger.error(f"Errore recupero dettagli transcript {transcript_id}: {e}")
         return Response(
             {'error': 'Errore recupero dettagli transcript'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def extract_clinical_data_llm(request, transcript_id):
+    """
+    Endpoint per estrazione dati clinici LLM con transcript modificato
+    """
+    try:
+        # Recupera i dati da MongoDB
+        from services.mongodb_service import mongodb_service
+        from services.extraction import ClinicalExtractionService
+        
+        transcript_data = mongodb_service.get_visit_data(transcript_id)
+        
+        if not transcript_data:
+            return Response(
+                {'error': 'Transcript non trovato'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Verifica se è fornito un transcript modificato
+        updated_transcript = request.data.get('transcript_text')
+        if updated_transcript:
+            # Aggiorna il transcript in MongoDB con il testo modificato
+            mongodb_service.update_transcript_text(transcript_id, updated_transcript)
+            transcript_data['transcript_text'] = updated_transcript
+        
+        # Avvia l'estrazione con il servizio LLM
+        extraction_service = ClinicalExtractionService()
+        
+        # Simula un oggetto AudioTranscript per compatibilità
+        class TranscriptProxy:
+            def __init__(self, data):
+                self.transcript_id = transcript_id
+                self.transcript_text = data.get('transcript_text', '')
+                self.encounter_id = data.get('encounter_id', '')
+                
+        transcript_proxy = TranscriptProxy(transcript_data)
+        clinical_data = extraction_service.extract_clinical_data(transcript_proxy)
+        
+        # Aggiorna MongoDB con i dati estratti
+        clinical_dict = {
+            'first_name': getattr(clinical_data, 'first_name', ''),
+            'last_name': getattr(clinical_data, 'last_name', ''),
+            'birth_date': getattr(clinical_data, 'birth_date', ''),
+            'gender': getattr(clinical_data, 'gender', ''),
+            'symptoms': getattr(clinical_data, 'symptoms', ''),
+            'diagnosis': getattr(clinical_data, 'diagnosis', ''),
+        }
+        
+        mongodb_service.update_clinical_data(transcript_id, clinical_dict)
+        
+        logger.info(f"Estrazione LLM completata per transcript {transcript_id}")
+        
+        return Response({
+            'transcript_id': transcript_id,
+            'extracted_data': clinical_dict,
+            'status': 'completed'
+        })
+        
+    except Exception as e:
+        logger.error(f"Errore estrazione LLM per transcript {transcript_id}: {e}")
+        return Response(
+            {'error': f'Errore durante estrazione LLM: {str(e)}'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

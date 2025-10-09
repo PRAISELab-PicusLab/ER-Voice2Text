@@ -439,6 +439,62 @@ class MongoDBService:
         except Exception as e:
             logger.error(f"Errore generazione contenuto report: {e}")
             return None
+    
+    def update_transcript_text(self, transcript_id: str, new_text: str) -> bool:
+        """
+        Aggiorna il testo della trascrizione
+        """
+        try:
+            transcript = AudioTranscript.objects(transcript_id=transcript_id).first()
+            if transcript:
+                transcript.full_transcript = new_text
+                transcript.save()
+                logger.info(f"Transcript {transcript_id} aggiornato con nuovo testo")
+                return True
+            else:
+                logger.warning(f"Transcript {transcript_id} non trovato per aggiornamento testo")
+                return False
+        except Exception as e:
+            logger.error(f"Errore aggiornamento testo transcript {transcript_id}: {e}")
+            return False
+    
+    def update_clinical_data(self, transcript_id: str, clinical_dict: Dict[str, Any]) -> bool:
+        """
+        Aggiorna i dati clinici associati al transcript
+        """
+        try:
+            # Aggiorna i dati del paziente
+            transcript = AudioTranscript.objects(transcript_id=transcript_id).first()
+            if not transcript:
+                logger.warning(f"Transcript {transcript_id} non trovato per aggiornamento dati clinici")
+                return False
+            
+            # Aggiorna MedicalPatientData
+            patient_data = MedicalPatientData.objects(transcript=transcript).first()
+            if not patient_data:
+                patient_data = MedicalPatientData(transcript=transcript)
+            
+            patient_data.first_name = clinical_dict.get('first_name', '')
+            patient_data.last_name = clinical_dict.get('last_name', '')
+            patient_data.birth_date = clinical_dict.get('birth_date', '')
+            patient_data.gender = clinical_dict.get('gender', '')
+            patient_data.save()
+            
+            # Aggiorna ClinicalAssessment
+            clinical_assessment = ClinicalAssessment.objects(transcript=transcript).first()
+            if not clinical_assessment:
+                clinical_assessment = ClinicalAssessment(transcript=transcript)
+            
+            clinical_assessment.symptoms = clinical_dict.get('symptoms', '')
+            clinical_assessment.assessment = clinical_dict.get('diagnosis', '')
+            clinical_assessment.save()
+            
+            logger.info(f"Dati clinici aggiornati per transcript {transcript_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Errore aggiornamento dati clinici per transcript {transcript_id}: {e}")
+            return False
 
 
 # Istanza singleton del servizio

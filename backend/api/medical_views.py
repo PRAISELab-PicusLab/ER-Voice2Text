@@ -326,9 +326,27 @@ def generate_pdf_report(request, transcript_id):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Genera PDF
+        # Estrai informazioni paziente per nome file PDF
+        patient_name = ""
+        visit_date = ""
+        
+        try:
+            # Cerca informazioni paziente nel contenuto del report
+            if 'patient_info' in report_content and report_content['patient_info']:
+                first_name = report_content['patient_info'].get('first_name', '')
+                last_name = report_content['patient_info'].get('last_name', '')
+                if first_name and last_name:
+                    patient_name = f"{first_name}_{last_name}"
+                elif first_name or last_name:
+                    patient_name = first_name or last_name
+                
+                visit_date = report_content['patient_info'].get('visit_date', '')
+        except Exception as e:
+            logger.warning(f"Errore estrazione dati paziente per filename: {e}")
+        
+        # Genera PDF con nome strutturato
         encounter_id = report_content.get('encounter_id', transcript_id)
-        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical')
+        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical', patient_name, visit_date)
         
         success = pdf_report_service.generate_medical_report(report_content, pdf_path)
         
@@ -369,8 +387,26 @@ def download_pdf_report(request, transcript_id):
         if not report_content:
             return HttpResponse("Report non trovato", status=404)
         
+        # Estrai informazioni paziente per nome file PDF
+        patient_name = ""
+        visit_date = ""
+        
+        try:
+            # Cerca informazioni paziente nel contenuto del report
+            if 'patient_info' in report_content and report_content['patient_info']:
+                first_name = report_content['patient_info'].get('first_name', '')
+                last_name = report_content['patient_info'].get('last_name', '')
+                if first_name and last_name:
+                    patient_name = f"{first_name}_{last_name}"
+                elif first_name or last_name:
+                    patient_name = first_name or last_name
+                
+                visit_date = report_content['patient_info'].get('visit_date', '')
+        except Exception as e:
+            logger.warning(f"Errore estrazione dati paziente per filename: {e}")
+        
         encounter_id = report_content.get('encounter_id', transcript_id)
-        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical')
+        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical', patient_name, visit_date)
         
         # Genera PDF se non esiste già
         if not os.path.exists(pdf_path):

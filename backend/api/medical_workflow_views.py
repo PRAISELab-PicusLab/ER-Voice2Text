@@ -6,7 +6,7 @@ Gestisce la pipeline di trascrizione, estrazione entità e generazione report
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.shortcuts import get_object_or_404
 from django.conf import settings
@@ -205,7 +205,8 @@ def patients_list(request):
 def process_audio_visit(request):
     """
     Endpoint per processare una nuova visita audio
-    Pipeline completa: trascrizione -> estrazione entità -> salvataggio MongoDB
+    Pipeline: trascrizione -> salvataggio MongoDB (senza estrazione automatica)
+    L'estrazione verrà fatta separatamente quando l'utente preme il bottone
     """
     temp_audio_path: Optional[str] = None
 
@@ -216,7 +217,6 @@ def process_audio_visit(request):
         sintomi_principali = request.data.get('sintomi_principali', '')
         codice_triage = (request.data.get('codice_triage') or '').strip().lower() or 'white'
         note_triage = request.data.get('note_triage', '')
-        usage_mode = 'Emergency'  # Default per nuove visite
 
         if not audio_file:
             return Response(
@@ -242,7 +242,7 @@ def process_audio_visit(request):
                 temp_file.write(chunk)
             temp_audio_path = temp_file.name
 
-        # Step 1: Trascrizione audio
+        # Step 1: SOLO Trascrizione audio (senza estrazione automatica)
         logger.info("Avvio trascrizione per nuova visita audio")
         transcript_result = whisper_service.transcribe_audio_file(temp_audio_path)
 
@@ -262,27 +262,18 @@ def process_audio_visit(request):
         print(f"Lunghezza: {len(transcript_text)} caratteri")
         print(f"================================\n")
 
-        # Step 2: Estrazione entità cliniche
-        logger.info("Avvio estrazione entità cliniche")
-        nvidia_service = NVIDIANIMService()
-        clinical_data = nvidia_service.extract_clinical_entities(transcript_text, usage_mode)
-
-        if not clinical_data:
-            if temp_audio_path and os.path.exists(temp_audio_path):
-                os.unlink(temp_audio_path)
-                temp_audio_path = None
-            return Response(
-                {'error': 'Errore durante estrazione entità cliniche'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-        logger.info("Estrazione entità completata")
-
-        extracted_data = clinical_data.get('extracted_data', {}) or {}
-
+        # Crea paziente temporaneo se necessario
         if not patient:
-            patient, patient_created = _create_patient_from_extracted_data(extracted_data)
-            logger.info(f"Creato nuovo paziente {patient.patient_id} da dati estratti")
+            timestamp_suffix = datetime.now().strftime('%Y%m%d%H%M%S')
+            patient = Patient.objects.create(
+                first_name='Paziente',
+                last_name=f'Anonimo {timestamp_suffix}',
+                date_of_birth=date.today(),
+                place_of_birth='Sconosciuto',
+                gender='O'
+            )
+            patient_created = True
+            logger.info(f"Creato paziente temporaneo {patient.patient_id}")
 
         doctor = getattr(patient, 'assigned_doctor', None)
         if not doctor:
@@ -299,11 +290,9 @@ def process_audio_visit(request):
 
         valid_triage_codes = {'white', 'green', 'yellow', 'red', 'black'}
         if codice_triage not in valid_triage_codes:
-            codice_triage = (extracted_data.get('triage_code') or 'white').strip().lower()
-        if codice_triage not in valid_triage_codes:
             codice_triage = 'white'
 
-        chief_complaint = sintomi_principali.strip() or (extracted_data.get('symptoms') or '').strip() or 'Visita registrata tramite audio'
+        chief_complaint = sintomi_principali.strip() or 'Visita registrata tramite audio'
 
         encounter = Encounter.objects.create(
             patient=patient,
@@ -322,13 +311,16 @@ def process_audio_visit(request):
         os.rename(temp_audio_path, final_audio_path)
         temp_audio_path = None
 
-        transcript_id = mongodb_service.save_patient_visit(
+        # Salva SOLO la trascrizione su MongoDB (con dati iniziali del triage)
+        transcript_id = mongodb_service.save_patient_visit_transcript_only(
             encounter_id=encounter_id,
             patient_id=str(patient.patient_id),
             doctor_id=str(doctor.doctor_id),
             audio_file_path=audio_file_path,
             transcript_text=transcript_text,
-            clinical_data=clinical_data
+            triage_code=codice_triage,
+            symptoms=sintomi_principali,
+            triage_notes=note_triage
         )
 
         if not transcript_id:
@@ -337,13 +329,7 @@ def process_audio_visit(request):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        logger.info(f"Visita salvata con transcript_id: {transcript_id}")
-
-        # Aggiorna encounter status se necessario
-        if encounter.status == 'in_progress':
-            encounter.status = 'completed'
-            encounter.discharge_time = datetime.now()
-            encounter.save()
+        logger.info(f"Trascrizione salvata con transcript_id: {transcript_id}")
 
         patient_payload = {
             'patient_id': str(patient.patient_id),
@@ -357,18 +343,14 @@ def process_audio_visit(request):
         }
 
         return Response({
-            'message': 'Visita processata con successo',
+            'message': 'Trascrizione completata con successo',
             'transcript_id': transcript_id,
             'encounter_id': encounter_id,
             'transcript': transcript_text,
             'transcript_length': len(transcript_text),
-            'entities_extracted': len(extracted_data),
-            'validation_errors': clinical_data.get('validation_errors', []),
-            'clinical_data': clinical_data,
-            'llm_fallback': clinical_data.get('fallback', False),
-            'llm_warnings': clinical_data.get('warnings', []),
             'patient_created': patient_created,
-            'patient': patient_payload
+            'patient': patient_payload,
+            'needs_extraction': True  # Indica che l'estrazione deve essere fatta separatamente
         })
 
     except Exception as e:
@@ -383,7 +365,7 @@ def process_audio_visit(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def patient_visit_history(request, patient_id):
     """
     Endpoint per cronologia visite di un paziente
@@ -406,7 +388,7 @@ def patient_visit_history(request, patient_id):
 
 
 @api_view(['PUT'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 @parser_classes([JSONParser])
 def update_patient_data(request, patient_id):
     """
@@ -460,7 +442,7 @@ def update_patient_data(request, patient_id):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def generate_pdf_report(request, transcript_id):
     """
     Endpoint per generare report PDF da transcript MongoDB
@@ -480,9 +462,27 @@ def generate_pdf_report(request, transcript_id):
         
         logger.info(f"Report content recuperato per transcript_id: {transcript_id}")
         
-        # Genera PDF
+        # Estrai informazioni paziente per nome file PDF
+        patient_name = ""
+        visit_date = ""
+        
+        try:
+            # Cerca informazioni paziente nel contenuto del report
+            if 'patient_info' in report_content and report_content['patient_info']:
+                first_name = report_content['patient_info'].get('first_name', '')
+                last_name = report_content['patient_info'].get('last_name', '')
+                if first_name and last_name:
+                    patient_name = f"{first_name}_{last_name}"
+                elif first_name or last_name:
+                    patient_name = first_name or last_name
+                
+                visit_date = report_content['patient_info'].get('visit_date', '')
+        except Exception as e:
+            logger.warning(f"Errore estrazione dati paziente per filename: {e}")
+        
+        # Genera PDF con nome strutturato
         encounter_id = report_content.get('encounter_id', transcript_id)
-        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical')
+        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical', patient_name, visit_date)
         
         logger.info(f"Generando PDF in: {pdf_path}")
         
@@ -516,7 +516,7 @@ def generate_pdf_report(request, transcript_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def download_pdf_report(request, transcript_id):
     """
     Endpoint per download diretto del report PDF
@@ -533,8 +533,26 @@ def download_pdf_report(request, transcript_id):
         
         logger.info(f"Report content trovato per transcript_id: {transcript_id}")
         
+        # Estrai informazioni paziente per nome file PDF
+        patient_name = ""
+        visit_date = ""
+        
+        try:
+            # Cerca informazioni paziente nel contenuto del report
+            if 'patient_info' in report_content and report_content['patient_info']:
+                first_name = report_content['patient_info'].get('first_name', '')
+                last_name = report_content['patient_info'].get('last_name', '')
+                if first_name and last_name:
+                    patient_name = f"{first_name}_{last_name}"
+                elif first_name or last_name:
+                    patient_name = first_name or last_name
+                
+                visit_date = report_content['patient_info'].get('visit_date', '')
+        except Exception as e:
+            logger.warning(f"Errore estrazione dati paziente per filename: {e}")
+        
         encounter_id = report_content.get('encounter_id', transcript_id)
-        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical')
+        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical', patient_name, visit_date)
         
         logger.info(f"PDF path: {pdf_path}")
         
@@ -555,9 +573,8 @@ def download_pdf_report(request, transcript_id):
             content_type='application/pdf'
         )
         
-        patient_name = f"{report_content.get('first_name', '')}{report_content.get('last_name', '')}".strip()
-        filename = f"report_{patient_name}_{report_content.get('visit_date', '')}.pdf"
-        
+        # Usa il nome del file già generato dal servizio PDF
+        filename = os.path.basename(pdf_path)
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         logger.info(f"PDF download completato per transcript_id: {transcript_id}")
@@ -569,7 +586,7 @@ def download_pdf_report(request, transcript_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def transcript_details(request, transcript_id):
     """
     Endpoint per dettagli completi di un transcript
@@ -601,7 +618,7 @@ def transcript_details(request, transcript_id):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def extract_clinical_data_llm(request, transcript_id):
     """
     Endpoint per estrazione dati clinici LLM con transcript modificato
@@ -609,7 +626,6 @@ def extract_clinical_data_llm(request, transcript_id):
     try:
         # Recupera i dati da MongoDB
         from services.mongodb_service import mongodb_service
-        from services.extraction import ClinicalExtractionService
         
         transcript_data = mongodb_service.get_visit_data(transcript_id)
         
@@ -623,39 +639,52 @@ def extract_clinical_data_llm(request, transcript_id):
         updated_transcript = request.data.get('transcript_text')
         if updated_transcript:
             # Aggiorna il transcript in MongoDB con il testo modificato
-            mongodb_service.update_transcript_text(transcript_id, updated_transcript)
-            transcript_data['transcript_text'] = updated_transcript
+            success = mongodb_service.update_transcript_text(transcript_id, updated_transcript)
+            if success:
+                transcript_data['transcript_text'] = updated_transcript
+                logger.info(f"Transcript {transcript_id} aggiornato con testo modificato")
+            else:
+                logger.warning(f"Errore aggiornamento transcript {transcript_id}")
         
-        # Avvia l'estrazione con il servizio LLM
-        extraction_service = ClinicalExtractionService()
+        # Usa il testo della trascrizione (modificato o originale)
+        transcript_text = transcript_data.get('transcript_text', '')
         
-        # Simula un oggetto AudioTranscript per compatibilità
-        class TranscriptProxy:
-            def __init__(self, data):
-                self.transcript_id = transcript_id
-                self.transcript_text = data.get('transcript_text', '')
-                self.encounter_id = data.get('encounter_id', '')
-                
-        transcript_proxy = TranscriptProxy(transcript_data)
-        clinical_data = extraction_service.extract_clinical_data(transcript_proxy)
+        if not transcript_text.strip():
+            return Response(
+                {'error': 'Nessun testo di trascrizione disponibile per l\'estrazione'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Avvia l'estrazione con NVIDIA NIM usando il testo corretto
+        nvidia_service = NVIDIANIMService()
+        usage_mode = 'Emergency'  # Default per emergenze
+        clinical_data = nvidia_service.extract_clinical_entities(transcript_text, usage_mode)
+        
+        if not clinical_data:
+            return Response(
+                {'error': 'Errore durante estrazione entità cliniche'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        extracted_data = clinical_data.get('extracted_data', {}) or {}
         
         # Aggiorna MongoDB con i dati estratti
-        clinical_dict = {
-            'first_name': getattr(clinical_data, 'first_name', ''),
-            'last_name': getattr(clinical_data, 'last_name', ''),
-            'birth_date': getattr(clinical_data, 'birth_date', ''),
-            'gender': getattr(clinical_data, 'gender', ''),
-            'symptoms': getattr(clinical_data, 'symptoms', ''),
-            'diagnosis': getattr(clinical_data, 'diagnosis', ''),
-        }
+        update_success = mongodb_service.update_clinical_data(transcript_id, extracted_data)
         
-        mongodb_service.update_clinical_data(transcript_id, clinical_dict)
+        if not update_success:
+            logger.warning(f"Errore aggiornamento dati clinici per transcript {transcript_id}")
         
         logger.info(f"Estrazione LLM completata per transcript {transcript_id}")
         
         return Response({
             'transcript_id': transcript_id,
-            'extracted_data': clinical_dict,
+            'extracted_data': extracted_data,
+            'clinical_data': clinical_data,
+            'validation_errors': clinical_data.get('validation_errors', []),
+            'llm_fallback': clinical_data.get('fallback', False),
+            'llm_warnings': clinical_data.get('warnings', []),
+            'transcript_updated': bool(updated_transcript),
+            'data_saved': update_success,
             'status': 'completed'
         })
         
@@ -663,5 +692,179 @@ def extract_clinical_data_llm(request, transcript_id):
         logger.error(f"Errore estrazione LLM per transcript {transcript_id}: {e}")
         return Response(
             {'error': f'Errore durante estrazione LLM: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def all_interventions_list(request):
+    """
+    Endpoint per ottenere lista di tutti gli interventi/visite da MongoDB
+    """
+    try:
+        # Recupera tutti i transcript da MongoDB
+        all_visits = mongodb_service.get_all_visits_summary()
+        
+        return Response({
+            'interventions': all_visits,
+            'total_count': len(all_visits)
+        })
+        
+    except Exception as e:
+        logger.error(f"Errore recupero lista interventi: {e}")
+        return Response(
+            {'error': 'Errore recupero lista interventi'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def intervention_details(request, transcript_id):
+    """
+    Endpoint per ottenere dettagli completi di un intervento
+    """
+    try:
+        logger.info(f"Richiesta dettagli per intervento: {transcript_id}")
+        
+        # Recupera dettagli da MongoDB
+        visit_data = mongodb_service.get_visit_data(transcript_id)
+        
+        if not visit_data:
+            logger.warning(f"Intervento {transcript_id} non trovato in MongoDB")
+            return Response(
+                {'error': 'Intervento non trovato'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        logger.info(f"Dati visita recuperati per {transcript_id}: status={visit_data.get('processing_status')}")
+        
+        # Recupera anche i dati per il report se disponibili
+        report_content = mongodb_service.generate_report_content(transcript_id)
+        
+        # Determina se l'intervento può essere ripreso
+        processing_status = visit_data.get('processing_status', 'unknown')
+        can_resume = processing_status in ['transcribed', 'in_progress']
+        
+        # Determina il prossimo step se può essere ripreso
+        next_step = None
+        if can_resume:
+            if processing_status == 'transcribed':
+                next_step = 'editing'  # L'utente deve rivedere/modificare la trascrizione
+            elif processing_status == 'in_progress':
+                next_step = 'transcribing'  # La trascrizione è ancora in corso
+        
+        response_data = {
+            'transcript_id': transcript_id,
+            'visit_data': visit_data,
+            'clinical_data': visit_data.get('clinical_data', {}),  # Aggiungi questo per compatibilità frontend
+            'report_content': report_content,
+            'has_clinical_data': bool(visit_data.get('clinical_data')),
+            'transcript_text': visit_data.get('transcript_text', ''),
+            'processing_status': processing_status,
+            'can_resume': can_resume,
+            'next_step': next_step,
+            'encounter_id': visit_data.get('encounter_id'),
+            'patient_id': visit_data.get('patient_id'),
+        }
+        
+        logger.info(f"Risposta preparata per {transcript_id}: can_resume={can_resume}, next_step={next_step}")
+        
+        return Response(response_data)
+        
+    except Exception as e:
+        logger.error(f"Errore recupero dettagli intervento {transcript_id}: {e}")
+        return Response(
+            {'error': 'Errore recupero dettagli intervento'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def resume_intervention(request, transcript_id):
+    """
+    Endpoint per riprendere un intervento incompleto
+    Restituisce i dati necessari per riprendere il workflow
+    """
+    try:
+        logger.info(f"Richiesta ripresa intervento: {transcript_id}")
+        
+        # Recupera dati dell'intervento
+        visit_data = mongodb_service.get_visit_data(transcript_id)
+        
+        if not visit_data:
+            return Response(
+                {'error': 'Intervento non trovato'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        processing_status = visit_data.get('processing_status', 'unknown')
+        
+        # Verifica se può essere ripreso
+        if processing_status not in ['transcribed', 'in_progress']:
+            return Response(
+                {'error': 'Questo intervento non può essere ripreso', 'status': processing_status}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Prepara i dati per riprendere il workflow
+        resume_data = {
+            'transcript_id': transcript_id,
+            'encounter_id': visit_data.get('encounter_id'),
+            'patient_id': visit_data.get('patient_id'),
+            'transcript_text': visit_data.get('transcript_text', ''),
+            'processing_status': processing_status,
+            'current_step': 'editing' if processing_status == 'transcribed' else 'transcribing',
+            'needs_extraction': processing_status == 'transcribed',
+            'created_at': visit_data.get('created_at')
+        }
+        
+        # Se ci sono già dati clinici estratti, includili
+        if visit_data.get('clinical_data'):
+            resume_data['existing_clinical_data'] = visit_data['clinical_data']
+            resume_data['has_clinical_data'] = True
+        else:
+            resume_data['has_clinical_data'] = False
+        
+        logger.info(f"Dati preparati per ripresa intervento {transcript_id}: step={resume_data['current_step']}")
+        
+        return Response(resume_data)
+        
+    except Exception as e:
+        logger.error(f"Errore ripresa intervento {transcript_id}: {e}")
+        return Response(
+            {'error': 'Errore durante ripresa intervento'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_intervention(request, transcript_id):
+    """
+    Endpoint per eliminare un intervento/visita
+    """
+    try:
+        logger.info(f"Richiesta eliminazione intervento: {transcript_id}")
+        
+        # Elimina da MongoDB
+        success = mongodb_service.delete_visit(transcript_id)
+        
+        if not success:
+            logger.error(f"Intervento non trovato per eliminazione: {transcript_id}")
+            return Response(
+                {'error': 'Intervento non trovato'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        logger.info(f"Intervento eliminato con successo: {transcript_id}")
+        return Response({'message': 'Intervento eliminato con successo'})
+        
+    except Exception as e:
+        logger.error(f"Errore eliminazione intervento {transcript_id}: {e}", exc_info=True)
+        return Response(
+            {'error': 'Errore durante eliminazione'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

@@ -5,3 +5,6 @@ __pycache__/
 backend/.env
 .venv/
 venv/
+
+# AUDIO
+encounter_*_*_*.mp3

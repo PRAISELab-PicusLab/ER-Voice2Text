@@ -182,8 +182,9 @@ export const transcriptsAPI = {
     return response.data
   },
 
-  extractClinicalData: async (id) => {
-    const response = await apiClient.post(`/transcripts/${id}/extract_clinical_data/`)
+  extractClinicalData: async (id, updatedTranscript = null) => {
+    const payload = updatedTranscript ? { transcript_text: updatedTranscript } : {}
+    const response = await apiClient.post(`/transcripts/${id}/extract_clinical_data/`, payload)
     return response.data
   },
 

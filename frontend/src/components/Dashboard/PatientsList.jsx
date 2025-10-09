@@ -8,20 +8,19 @@ import AudioRecordingModal from './AudioRecordingModal' Componente per gestione 
 
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { medicalWorkflowAPI } from '@services/api'
 import PatientModal from './PatientModal'
 import VisitHistoryModal from './VisitHistoryModal'
-import AudioRecordingModal from './AudioRecordingModal'
 
 const PatientsList = () => {
   const [filter, setFilter] = useState('all') // all, waiting, completed
   const [selectedPatient, setSelectedPatient] = useState(null)
   const [showPatientModal, setShowPatientModal] = useState(false)
   const [showVisitHistory, setShowVisitHistory] = useState(false)
-  const [showAudioRecording, setShowAudioRecording] = useState(false)
-  const [showNewVisitModal, setShowNewVisitModal] = useState(false)
   
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   // Query per lista pazienti
   const { data: patients, isLoading } = useQuery({
@@ -35,7 +34,13 @@ const PatientsList = () => {
     
     switch (action) {
       case 'new-emergency':
-        setShowAudioRecording(true)
+        // Naviga alla pagina unificata per nuove emergenze
+        navigate('/encounter/new', { 
+          state: { 
+            patient: patient,
+            isEmergency: true 
+          } 
+        })
         break
       case 'edit-data':
         setShowPatientModal(true)
@@ -49,16 +54,19 @@ const PatientsList = () => {
   }
 
   const handleNewEmergency = () => {
-    setSelectedPatient(null)
-    setShowNewVisitModal(true)
+    // Naviga alla pagina unificata per nuove emergenze senza paziente selezionato
+    navigate('/encounter/new', { 
+      state: { 
+        patient: null,
+        isEmergency: true 
+      } 
+    })
   }
 
   const closeModals = () => {
     setSelectedPatient(null)
     setShowPatientModal(false)
     setShowVisitHistory(false)
-    setShowAudioRecording(false)
-    setShowNewVisitModal(false)
   }
 
   const getStatusBadge = (status) => {
@@ -276,19 +284,6 @@ const PatientsList = () => {
           patient={selectedPatient}
           isOpen={showVisitHistory}
           onClose={closeModals}
-        />
-      )}
-
-      {(showAudioRecording || showNewVisitModal) && (
-        <AudioRecordingModal 
-          patient={selectedPatient}
-          isOpen={showAudioRecording || showNewVisitModal}
-          onClose={closeModals}
-          onCompleted={() => {
-            queryClient.invalidateQueries(['patients-list'])
-            queryClient.invalidateQueries(['dashboard-analytics'])
-            closeModals()
-          }}
         />
       )}
     </div>

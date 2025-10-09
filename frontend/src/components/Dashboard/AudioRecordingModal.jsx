@@ -68,17 +68,10 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
       setClinicalData(data.clinical_data || null)
       setResultPatient(data.patient || null)
       setStep('review')
-  queryClient.invalidateQueries({ queryKey: ['patients-list'] })
-  queryClient.invalidateQueries({ queryKey: ['patients'] })
-  queryClient.invalidateQueries({ queryKey: ['dashboard-analytics'] })
-      if (onCompleted) {
-        onCompleted({
-          transcriptId: data.transcript_id,
-          encounterId: data.encounter_id,
-          patient: data.patient || null,
-          raw: data
-        })
-      }
+      queryClient.invalidateQueries({ queryKey: ['patients-list'] })
+      queryClient.invalidateQueries({ queryKey: ['patients'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-analytics'] })
+      // NON chiamare onCompleted qui - lascia che l'utente veda i risultati prima
     },
     onError: (error) => {
       console.error('Errore processing audio:', error)
@@ -87,6 +80,51 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
       setStep('record')
     }
   })
+
+  // Funzione per gestire il download del PDF
+  const handleDownloadPDF = async () => {
+    try {
+      const transcriptId = processAudioMutation.data?.transcript_id
+      if (!transcriptId) {
+        alert('Errore: ID trascrizione non disponibile')
+        return
+      }
+
+      // Prima genera il PDF
+      await medicalWorkflowAPI.generatePDFReport(transcriptId)
+      
+      // Poi scaricalo
+      const blob = await medicalWorkflowAPI.downloadPDFReport(transcriptId)
+      
+      // Crea URL per il download
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `report_${transcriptId}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      
+    } catch (error) {
+      console.error('Errore nel download PDF:', error)
+      alert('Errore durante il download del PDF: ' + (error.message || 'Errore sconosciuto'))
+    }
+  }
+
+  // Funzione per gestire la chiusura del modal
+  const handleClose = () => {
+    // Chiama onCompleted solo quando l'utente chiude effettivamente il modal
+    if (step === 'review' && onCompleted) {
+      onCompleted({
+        transcriptId: processAudioMutation.data?.transcript_id,
+        encounterId: processAudioMutation.data?.encounter_id,
+        patient: processAudioMutation.data?.patient || resultPatient,
+        raw: processAudioMutation.data
+      })
+    }
+    onClose()
+  }
 
   const startRecording = async () => {
     try {
@@ -177,6 +215,17 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
     return colors[code] || 'secondary'
   }
 
+  const getTriageIcon = (code) => {
+    const icons = {
+      white: '⚪',
+      green: '🟢',
+      yellow: '🟡',
+      red: '🔴',
+      black: '⚫'
+    }
+    return icons[code] || '⚪'
+  }
+
   if (!isOpen) return null
 
   return (
@@ -194,7 +243,7 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
             <button 
               type="button" 
               className="btn-close ms-auto mt-2 mt-md-0" 
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isRecording || processAudioMutation.isPending}
               aria-label="Chiudi"
             ></button>
@@ -219,7 +268,7 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
                   </div>
                   <div className="col-12 col-md-3 text-md-end mt-2 mt-md-0">
                     <span className={`badge bg-${getTriageColor(visitData.codice_triage)} fs-6 px-3 py-2`} style={{fontSize: '1.1rem'}}>
-                      Triage: {visitData.codice_triage?.toUpperCase()}
+                      {getTriageIcon(visitData.codice_triage)} Triage: {visitData.codice_triage?.toUpperCase()}
                     </span>
                   </div>
                 </div>
@@ -316,6 +365,11 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
                         <h3 className="text-danger">Registrazione in corso...</h3>
                         <h2 className="font-monospace">{formatTime(recordingTime)}</h2>
                       </div>
+                      <div className="mb-4">
+                        <span className={`badge bg-${getTriageColor(visitData.codice_triage)} fs-4 px-4 py-2`}>
+                          {getTriageIcon(visitData.codice_triage)} Triage: {visitData.codice_triage?.toUpperCase()}
+                        </span>
+                      </div>
                       <button 
                         className="btn btn-dark btn-lg px-5 py-3 fs-3 fw-bold shadow"
                         onClick={stopRecording}
@@ -332,15 +386,15 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
 
             {step === 'transcribing' && (
               <div className="text-center py-4">
-                <div className="spinner-border text-primary mb-3" style={{ width: '3rem', height: '3rem' }}>
+                <div className="spinner-border text-primary mb-3" style={{ width: '4rem', height: '4rem' }}>
                   <span className="visually-hidden">Elaborazione...</span>
                 </div>
-                <h4>Elaborazione in corso...</h4>
-                <p className="text-muted">
+                <h3 className="text-primary mb-3">Elaborazione in corso...</h3>
+                <p className="fs-5 text-muted mb-4">
                   Stiamo trascrivendo l'audio e estraendo i dati clinici utilizzando l'AI
                 </p>
-                <div className="progress" style={{ height: '10px' }}>
-                  <div className="progress-bar progress-bar-striped progress-bar-animated" 
+                <div className="progress" style={{ height: '12px' }}>
+                  <div className="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
                        style={{ width: '100%' }}></div>
                 </div>
               </div>
@@ -368,16 +422,43 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
                 )}
 
                 {/* Trascrizione */}
-                <div className="card mb-3">
-                  <div className="card-header">
-                    <h6 className="mb-0">
+                <div className="card mb-3 border-success">
+                  <div className="card-header bg-success bg-opacity-10">
+                    <h5 className="mb-0 fw-bold text-success">
                       <i className="bi bi-file-text me-2"></i>
-                      Trascrizione Audio
-                    </h6>
+                      Trascrizione Audio Whisper AI
+                    </h5>
                   </div>
                   <div className="card-body">
-                    <div className="bg-light p-3 rounded" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                      {transcription}
+                    <div className="bg-light p-4 rounded border" style={{ 
+                      maxHeight: '300px', 
+                      overflowY: 'auto',
+                      fontSize: '1.1rem',
+                      lineHeight: '1.6',
+                      fontFamily: 'Georgia, serif'
+                    }}>
+                      {transcription ? (
+                        <div>
+                          <p className="mb-0" style={{ textAlign: 'justify' }}>
+                            {transcription}
+                          </p>
+                          <hr className="my-3" />
+                          <small className="text-muted d-flex align-items-center justify-content-between">
+                            <span>
+                              <i className="bi bi-robot me-1"></i>
+                              Trascritto automaticamente con AI Whisper
+                            </span>
+                            <span>
+                              Caratteri: {transcription.length} | Parole: {transcription.split(/\s+/).filter(w => w).length}
+                            </span>
+                          </small>
+                        </div>
+                      ) : (
+                        <div className="text-center text-muted">
+                          <i className="bi bi-hourglass-split me-2"></i>
+                          Trascrizione in elaborazione...
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -422,10 +503,33 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
                   </div>
                 )}
 
+                {/* Sezione Download PDF */}
+                <div className="card mb-3 border-primary">
+                  <div className="card-header bg-primary bg-opacity-10">
+                    <h6 className="mb-0 fw-bold text-primary">
+                      <i className="bi bi-file-earmark-pdf me-2"></i>
+                      Report PDF
+                    </h6>
+                  </div>
+                  <div className="card-body text-center">
+                    <p className="text-muted mb-3">
+                      Scarica il report PDF completo della visita con tutti i dati clinici estratti
+                    </p>
+                    <button 
+                      className="btn btn-primary btn-lg px-4 py-2"
+                      onClick={handleDownloadPDF}
+                      disabled={!processAudioMutation.data?.transcript_id}
+                    >
+                      <i className="bi bi-download me-2"></i>
+                      Scarica Report PDF
+                    </button>
+                  </div>
+                </div>
+
                 <div className="text-center">
                   <p className="text-success">
                     <i className="bi bi-check-circle me-2"></i>
-                    Visita salvata con successo! Il report PDF è disponibile nella cronologia del paziente.
+                    Visita salvata con successo! Puoi scaricare il report PDF e chiudere il modal.
                   </p>
                 </div>
               </div>
@@ -437,7 +541,7 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
               <button 
                 type="button" 
                 className="btn btn-secondary" 
-                onClick={onClose}
+                onClick={handleClose}
               >
                 Annulla
               </button>
@@ -458,19 +562,21 @@ const AudioRecordingModal = ({ isOpen, onClose, patient, onCompleted }) => {
               <>
                 <button 
                   type="button" 
-                  className="btn btn-warning" 
+                  className="btn btn-warning btn-lg px-4 py-3" 
                   onClick={resetRecording}
+                  style={{borderRadius: '1.2rem'}}
                 >
                   <i className="bi bi-arrow-clockwise me-2"></i>
                   Nuova Registrazione
                 </button>
                 <button 
                   type="button" 
-                  className="btn btn-success" 
-                  onClick={onClose}
+                  className="btn btn-success btn-lg px-4 py-3" 
+                  onClick={handleClose}
+                  style={{borderRadius: '1.2rem'}}
                 >
                   <i className="bi bi-check-lg me-2"></i>
-                  Chiudi
+                  Completa Visita
                 </button>
               </>
             )}

@@ -1,3 +1,10 @@
+# PYCACHE
+__pycache__/
+
+# ENV
 backend/.env
 .venv/
 venv/
+
+# AUDIO
+*.mp3

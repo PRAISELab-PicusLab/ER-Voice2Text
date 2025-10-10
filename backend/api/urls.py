@@ -14,10 +14,12 @@ from .medical_workflow_views import (
     download_pdf_report,
     transcript_details,
     extract_clinical_data_llm,
+    update_clinical_data,
     all_interventions_list,
     intervention_details,
     resume_intervention,
-    delete_intervention
+    delete_intervention,
+    calculate_codice_fiscale
 )
 
 router = DefaultRouter()
@@ -39,8 +41,10 @@ urlpatterns = [
     path('reports/<str:transcript_id>/download/', download_pdf_report, name='download-pdf-report'),
     path('transcripts/<str:transcript_id>/details/', transcript_details, name='transcript-details'),
     path('transcripts/<str:transcript_id>/extract_clinical_data/', extract_clinical_data_llm, name='extract-clinical-data-llm'),
+    path('transcripts/<str:transcript_id>/update_clinical_data/', update_clinical_data, name='update-clinical-data'),
     path('interventions/list/', all_interventions_list, name='all-interventions-list'),
     path('interventions/<str:transcript_id>/details/', intervention_details, name='intervention-details'),
     path('interventions/<str:transcript_id>/resume/', resume_intervention, name='resume-intervention'),
     path('interventions/<str:transcript_id>/delete/', delete_intervention, name='delete-intervention'),
+    path('utils/calculate-codice-fiscale/', calculate_codice_fiscale, name='calculate-codice-fiscale'),
 ]

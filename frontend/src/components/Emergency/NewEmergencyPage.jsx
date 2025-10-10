@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { medicalWorkflowAPI } from '../../services/api'
+import { medicalWorkflowAPI, transcriptsAPI } from '../../services/api'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 const NewEmergencyPage = () => {
@@ -93,14 +93,19 @@ const NewEmergencyPage = () => {
             setEditedTranscript(details.transcript_text)
           }
           if (details.clinical_data) {
-            setExtractedData({ extracted_data: details.clinical_data })
+            const clinicalData = details.clinical_data
+            // Se il triage_code non è presente nei dati clinici ma c'è in emergencyData, usalo
+            if (!clinicalData.triage_code && emergencyData.codice_triage) {
+              clinicalData.triage_code = emergencyData.codice_triage
+            }
+            setExtractedData({ extracted_data: clinicalData })
           }
         })
         .catch(error => {
           console.error('Errore caricamento dati intervento:', error)
         })
     }
-  }, [editMode, interventionData])
+  }, [editMode, interventionData, emergencyData.codice_triage])
 
   // Mutation per processare l'audio completo
   const processAudioMutation = useMutation({
@@ -136,6 +141,10 @@ const NewEmergencyPage = () => {
       return medicalWorkflowAPI.extractClinicalData(transcriptId, editedTranscript)
     },
     onSuccess: (data) => {
+      // Se il triage_code non è presente nei dati estratti, usa quello da emergencyData
+      if (data.extracted_data && !data.extracted_data.triage_code && emergencyData.codice_triage) {
+        data.extracted_data.triage_code = emergencyData.codice_triage
+      }
       setExtractedData(data)
       setCurrentStep('extraction')
     },
@@ -155,6 +164,22 @@ const NewEmergencyPage = () => {
     },
     onError: (error) => {
       console.error('Errore generazione PDF:', error)
+    }
+  })
+
+  // Mutation per aggiornare i dati clinici estratti
+  const updateClinicalDataMutation = useMutation({
+    mutationFn: async ({ transcriptId, clinicalData }) => {
+      return transcriptsAPI.updateClinicalData(transcriptId, clinicalData)
+    },
+    onSuccess: (data) => {
+      console.log('Dati clinici aggiornati con successo:', data)
+      // Dopo aver salvato i dati, genera il PDF
+      generatePDFMutation.mutate(transcriptId)
+    },
+    onError: (error) => {
+      console.error('Errore aggiornamento dati clinici:', error)
+      alert('Errore durante il salvataggio delle modifiche. Riprova.')
     }
   })
 
@@ -236,8 +261,12 @@ const NewEmergencyPage = () => {
   }
 
   const handleGeneratePDF = () => {
-    if (transcriptId) {
-      generatePDFMutation.mutate(transcriptId)
+    if (transcriptId && extractedData?.extracted_data) {
+      // Prima salva le modifiche ai dati estratti, poi genera il PDF
+      updateClinicalDataMutation.mutate({
+        transcriptId,
+        clinicalData: extractedData.extracted_data
+      })
     }
   }
 
@@ -249,6 +278,37 @@ const NewEmergencyPage = () => {
         [field]: value
       }
     }))
+  }
+
+  const handleCalculateCodiceFiscale = async () => {
+    if (!extractedData?.extracted_data) {
+      alert('Nessun dato estratto disponibile per il calcolo del codice fiscale.')
+      return
+    }
+    
+    const data = extractedData.extracted_data
+    if (!data.first_name || !data.last_name || !data.birth_date || !data.gender || !data.birth_place) {
+      alert('Per calcolare il codice fiscale sono necessari: Nome, Cognome, Data di nascita, Sesso e Luogo di nascita.')
+      return
+    }
+
+    try {
+      const response = await medicalWorkflowAPI.calculateCodiceFiscale({
+        first_name: data.first_name,
+        last_name: data.last_name,
+        birth_date: data.birth_date,
+        gender: data.gender,
+        birth_place: data.birth_place
+      })
+      
+      if (response.codice_fiscale) {
+        handleExtractedDataChange('codice_fiscale', response.codice_fiscale)
+        // alert(`Codice fiscale calcolato: ${response.codice_fiscale}`)
+      }
+    } catch (error) {
+      console.error('Errore calcolo codice fiscale:', error)
+      alert('Errore durante il calcolo del codice fiscale. Riprova.')
+    }
   }
 
   const formatTime = (seconds) => {
@@ -490,7 +550,7 @@ const NewEmergencyPage = () => {
 
                 {/* Badge triage essenziale */}
                 <div className="mb-3">
-                  <span className={`badge fs-6 px-3 py-2 medical-triage-badge ${getTriageColor(emergencyData.codice_triage) === 'secondary' ? 'text-dark' : 'text-bianco'}`}
+                  <span className={`badge fs-6 px-3 py-2 medical-triage-badge ${getTriageColor(emergencyData.codice_triage) === 'secondary' ? 'text-dark' : 'text-dark'}`}
                         style={{
                           backgroundColor: getTriageColor(emergencyData.codice_triage) === 'secondary' ? '#f8f9fa' : undefined,
                           borderColor: getTriageColor(emergencyData.codice_triage) === 'secondary' ? '#dee2e6' : undefined
@@ -663,7 +723,6 @@ const NewEmergencyPage = () => {
                   <div className="col-12">
                     <div className="alert alert-info">
                       <h5 className="alert-heading">
-                        <i className="bi bi-info-circle me-2"></i>
                         Risultati Estrazione AI
                       </h5>
                       {extractedData.validation_errors && extractedData.validation_errors.length > 0 && (
@@ -719,6 +778,29 @@ const NewEmergencyPage = () => {
                             />
                           </div>
                           <div className="col-md-4">
+                            <label className="form-label fw-bold">Codice Fiscale: <span className="text-danger">*</span></label>
+                            <div className="input-group">
+                              <input
+                                type="text"
+                                className="form-control text-uppercase"
+                                placeholder="RSSMRA80A01H501Z"
+                                maxLength="16"
+                                value={extractedData.extracted_data.codice_fiscale || ''}
+                                onChange={(e) => handleExtractedDataChange('codice_fiscale', e.target.value.toUpperCase())}
+                                style={{ fontFamily: 'monospace' }}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-outline-primary"
+                                onClick={handleCalculateCodiceFiscale}
+                                title="Calcola automaticamente"
+                              >
+                                <i className="bi bi-calculator"></i>
+                              </button>
+                            </div>
+                            <small className="text-muted">Obbligatorio - 16 caratteri alfanumerici</small>
+                          </div>
+                          <div className="col-md-4">
                             <label className="form-label fw-bold">Età:</label>
                             <input
                               type="text"
@@ -758,7 +840,7 @@ const NewEmergencyPage = () => {
                               <option value="O">Altro</option>
                             </select>
                           </div>
-                          <div className="col-md-6">
+                          <div className="col-md-4">
                             <label className="form-label fw-bold">Telefono:</label>
                             <input
                               type="text"
@@ -767,7 +849,7 @@ const NewEmergencyPage = () => {
                               onChange={(e) => handleExtractedDataChange('phone', e.target.value)}
                             />
                           </div>
-                          <div className="col-md-6">
+                          <div className="col-md-4">
                             <label className="form-label fw-bold">Città Residenza:</label>
                             <input
                               type="text"
@@ -862,7 +944,7 @@ const NewEmergencyPage = () => {
                             <label className="form-label fw-bold">Codice Triage:</label>
                             <select
                               className="form-select"
-                              value={extractedData.extracted_data.triage_code || emergencyData.triage_code || ''}
+                              value={extractedData.extracted_data.triage_code || emergencyData.codice_triage || ''}
                               onChange={(e) => handleExtractedDataChange('triage_code', e.target.value)}
                             >
                               <option value="">Seleziona</option>
@@ -871,6 +953,12 @@ const NewEmergencyPage = () => {
                               <option value="giallo">🟡 Giallo - Urgente</option>
                               <option value="rosso">🔴 Rosso - Molto Urgente</option>
                             </select>
+                            {!extractedData.extracted_data.triage_code && emergencyData.codice_triage && (
+                              <div className="form-text text-info">
+                                <i className="bi bi-info-circle me-1"></i>
+                                Codice ereditato dai dati iniziali dell'emergenza
+                              </div>
+                            )}
                           </div>
                           <div className="col-md-6">
                             <label className="form-label fw-bold">Modalità Accesso:</label>
@@ -903,13 +991,17 @@ const NewEmergencyPage = () => {
                     <button 
                       className="btn btn-primary btn-lg px-4 py-3 fs-5 fw-bold shadow emergency-btn"
                       onClick={handleGeneratePDF}
-                      disabled={generatePDFMutation.isPending}
+                      disabled={updateClinicalDataMutation.isPending || generatePDFMutation.isPending}
                     >
-                      {generatePDFMutation.isPending ? (
+                      {updateClinicalDataMutation.isPending || generatePDFMutation.isPending ? (
                         <>
                           <span className="spinner-border spinner-border-sm me-2"></span>
-                          <span className="d-none d-sm-inline">Generando PDF...</span>
-                          <span className="d-sm-none">PDF...</span>
+                          <span className="d-none d-sm-inline">
+                            {updateClinicalDataMutation.isPending ? 'Salvando modifiche...' : 'Generando PDF...'}
+                          </span>
+                          <span className="d-sm-none">
+                            {updateClinicalDataMutation.isPending ? 'Salvando...' : 'PDF...'}
+                          </span>
                         </>
                       ) : (
                         <>
@@ -919,6 +1011,12 @@ const NewEmergencyPage = () => {
                         </>
                       )}
                     </button>
+                  </div>
+                  <div className="mt-3">
+                    <small className="text-muted">
+                      <i className="bi bi-info-circle me-1"></i>
+                      Le modifiche ai dati verranno salvate automaticamente prima della generazione del PDF
+                    </small>
                   </div>
                 </div>
               </div>

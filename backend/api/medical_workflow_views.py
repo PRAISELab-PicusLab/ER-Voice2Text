@@ -696,6 +696,61 @@ def extract_clinical_data_llm(request, transcript_id):
         )
 
 
+@api_view(['PATCH'])
+@permission_classes([AllowAny])
+def update_clinical_data(request, transcript_id):
+    """
+    Endpoint per aggiornare i dati clinici estratti modificati dall'utente
+    """
+    try:
+        logger.info(f"Richiesta aggiornamento dati clinici per transcript: {transcript_id}")
+        
+        # Recupera i dati clinici dal request
+        clinical_data = request.data.get('clinical_data')
+        
+        if not clinical_data:
+            return Response(
+                {'error': 'Dati clinici non forniti'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verifica che il transcript esista
+        from services.mongodb_service import mongodb_service
+        transcript_data = mongodb_service.get_visit_data(transcript_id)
+        
+        if not transcript_data:
+            return Response(
+                {'error': 'Transcript non trovato'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Aggiorna i dati clinici in MongoDB
+        update_success = mongodb_service.update_clinical_data(transcript_id, clinical_data)
+        
+        if not update_success:
+            logger.error(f"Errore aggiornamento dati clinici per transcript {transcript_id}")
+            return Response(
+                {'error': 'Errore durante il salvataggio dei dati clinici'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        logger.info(f"Dati clinici aggiornati con successo per transcript {transcript_id}")
+        
+        return Response({
+            'transcript_id': transcript_id,
+            'updated_data': clinical_data,
+            'status': 'success',
+            'message': 'Dati clinici aggiornati con successo'
+        })
+        
+    except Exception as e:
+        logger.error(f"Errore aggiornamento dati clinici per transcript {transcript_id}: {e}")
+        return Response(
+            {'error': f'Errore durante aggiornamento dati clinici: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def all_interventions_list(request):
@@ -866,5 +921,82 @@ def delete_intervention(request, transcript_id):
         logger.error(f"Errore eliminazione intervento {transcript_id}: {e}", exc_info=True)
         return Response(
             {'error': 'Errore durante eliminazione'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@parser_classes([JSONParser])
+def calculate_codice_fiscale(request):
+    """
+    Endpoint per calcolare automaticamente il codice fiscale
+    """
+    try:
+        from codicefiscale import codicefiscale
+        
+        data = request.data
+        required_fields = ['first_name', 'last_name', 'birth_date', 'gender', 'birth_place']
+        
+        # Validazione campi obbligatori
+        for field in required_fields:
+            if not data.get(field):
+                return Response(
+                    {'error': f'Campo obbligatorio mancante: {field}'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Normalizza il sesso
+        gender = data['gender'].lower()
+        if gender in ['m', 'maschio', 'male']:
+            gender = 'M'
+        elif gender in ['f', 'femmina', 'female']:
+            gender = 'F'
+        else:
+            return Response(
+                {'error': 'Sesso non valido. Utilizzare M/F o maschio/femmina'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Parsa la data di nascita
+        birth_date = _safe_parse_date(data['birth_date'])
+        if not birth_date:
+            return Response(
+                {'error': 'Data di nascita non valida'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Calcola il codice fiscale
+        cf = codicefiscale.encode(
+            data['last_name'].strip(),
+            data['first_name'].strip(), 
+            gender,
+            str(birth_date),
+            data['birth_place'].strip()
+        )
+        
+        logger.info(f"Codice fiscale calcolato per {data['first_name']} {data['last_name']}: {cf}")
+        
+        return Response({
+            'codice_fiscale': cf,
+            'calculated_from': {
+                'first_name': data['first_name'].strip(),
+                'last_name': data['last_name'].strip(),
+                'birth_date': birth_date.isoformat(),
+                'gender': gender,
+                'birth_place': data['birth_place'].strip()
+            }
+        })
+        
+    except ImportError:
+        logger.error("Libreria codicefiscale non installata")
+        return Response(
+            {'error': 'Servizio calcolo codice fiscale non disponibile'}, 
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+    except Exception as e:
+        logger.error(f"Errore calcolo codice fiscale: {e}", exc_info=True)
+        return Response(
+            {'error': f'Errore durante il calcolo: {str(e)}'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

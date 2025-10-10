@@ -159,6 +159,7 @@ class MongoDBService:
                     patient_data = MedicalPatientData()
                     patient_data.first_name = extracted.get('first_name', '')
                     patient_data.last_name = extracted.get('last_name', '')
+                    patient_data.codice_fiscale = extracted.get('codice_fiscale', '')
                     # Gestisci età come int
                     age_value = extracted.get('age')
                     if age_value and age_value != '':

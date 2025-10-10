@@ -189,7 +189,7 @@ export const transcriptsAPI = {
   },
 
   updateClinicalData: async (id, clinicalData) => {
-    const response = await apiClient.patch(`/transcripts/${id}/update_clinical_data/`, {
+    const response = await apiClient.patch(`/api/transcripts/${id}/update_clinical_data/`, {
       clinical_data: clinicalData,
     })
     return response.data
@@ -549,9 +549,9 @@ export const medicalWorkflowAPI = {
     return response.data
   },
 
-  // Elimina un intervento
-  deleteIntervention: async (transcriptId) => {
-    const response = await apiClient.delete(`/api/interventions/${transcriptId}/delete/`)
+  // Calcola codice fiscale automaticamente
+  calculateCodiceFiscale: async (patientData) => {
+    const response = await apiClient.post('/api/utils/calculate-codice-fiscale/', patientData)
     return response.data
   }
 }

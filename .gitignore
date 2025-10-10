@@ -1,4 +1,5 @@
-# PYCACHE
+# CACHE and LOGS
+*.log
 __pycache__/
 
 # ENV
@@ -6,5 +7,5 @@ backend/.env
 .venv/
 venv/
 
-# AUDIO
-*.mp3
+# MEDIA
+media/

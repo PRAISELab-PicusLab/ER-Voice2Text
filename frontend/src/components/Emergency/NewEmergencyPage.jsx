@@ -63,7 +63,7 @@ const NewEmergencyPage = () => {
     },
     {
       icon: 'bi bi-file-earmark-text text-primary',
-      title: 'Trascrizione Completata',
+      title: 'Trascrizione in corso',
       subtitle: 'Testo estratto dall\'audio registrato.'
     }
   ]
@@ -523,7 +523,6 @@ const NewEmergencyPage = () => {
       )}
 
       {/* STEP 2: Registrazione in corso */}
-      {/* STEP 2: Registrazione in corso - STESSO FORMATO ELABORAZIONE */}
       {currentStep === 'recording' && (
         <div className="row justify-content-center">
           <div className="col-12 col-lg-6">
@@ -631,7 +630,7 @@ const NewEmergencyPage = () => {
                 <div className="text-center">
                   <small className="text-muted fw-medium">
                     <i className="bi bi-clock-history me-1"></i>
-                    Elaborazione automatica • Circa 30 secondi
+                    Elaborazione automatica • Attendere
                   </small>
                 </div>
               </div>
@@ -778,6 +777,15 @@ const NewEmergencyPage = () => {
                             />
                           </div>
                           <div className="col-md-4">
+                            <label className="form-label fw-bold">Età:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={extractedData.extracted_data.age || ''}
+                              onChange={(e) => handleExtractedDataChange('age', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-md-12">
                             <label className="form-label fw-bold">Codice Fiscale: <span className="text-danger">*</span></label>
                             <div className="input-group">
                               <input
@@ -799,15 +807,6 @@ const NewEmergencyPage = () => {
                               </button>
                             </div>
                             <small className="text-muted">Obbligatorio - 16 caratteri alfanumerici</small>
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label fw-bold">Età:</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={extractedData.extracted_data.age || ''}
-                              onChange={(e) => handleExtractedDataChange('age', e.target.value)}
-                            />
                           </div>
                           <div className="col-md-4">
                             <label className="form-label fw-bold">Data Nascita:</label>
@@ -840,7 +839,7 @@ const NewEmergencyPage = () => {
                               <option value="O">Altro</option>
                             </select>
                           </div>
-                          <div className="col-md-4">
+                          <div className="col-md-6">
                             <label className="form-label fw-bold">Telefono:</label>
                             <input
                               type="text"
@@ -849,7 +848,7 @@ const NewEmergencyPage = () => {
                               onChange={(e) => handleExtractedDataChange('phone', e.target.value)}
                             />
                           </div>
-                          <div className="col-md-4">
+                          <div className="col-md-6">
                             <label className="form-label fw-bold">Città Residenza:</label>
                             <input
                               type="text"

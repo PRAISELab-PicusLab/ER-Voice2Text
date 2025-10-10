@@ -9,7 +9,7 @@ import InterventionsList from './InterventionsList'
 const Dashboard = () => {
   const { user } = useAuthStore()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('patients')
+  const [activeTab, setActiveTab] = useState('interventions')
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ['dashboard-analytics'],
@@ -123,20 +123,20 @@ const Dashboard = () => {
           <ul className="nav nav-tabs">
             <li className="nav-item">
               <button 
-                className={`nav-link ${activeTab === 'patients' ? 'active' : ''}`}
-                onClick={() => setActiveTab('patients')}
-              >
-                <i className="bi bi-people me-2"></i>
-                Pazienti
-              </button>
-            </li>
-            <li className="nav-item">
-              <button 
                 className={`nav-link ${activeTab === 'interventions' ? 'active' : ''}`}
                 onClick={() => setActiveTab('interventions')}
               >
                 <i className="bi bi-clipboard-data me-2"></i>
                 Tutti gli Interventi
+              </button>
+            </li>
+            <li className="nav-item">
+              <button 
+                className={`nav-link ${activeTab === 'patients' ? 'active' : ''}`}
+                onClick={() => setActiveTab('patients')}
+              >
+                <i className="bi bi-people me-2"></i>
+                Pazienti
               </button>
             </li>
           </ul>

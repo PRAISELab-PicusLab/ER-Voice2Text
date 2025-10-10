@@ -124,7 +124,7 @@ const InterventionDetailModal = ({ intervention, show, onHide, onEdit }) => {
             <button type="button" className="btn-close" onClick={onHide}></button>
           </div>
           
-          <div className="modal-body">
+          <div className="modal-body" style={{ padding: '20px' }}>
             {isLoading ? (
               <div className="text-center p-4">
                 <div className="spinner-border text-primary" role="status">

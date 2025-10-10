@@ -542,69 +542,89 @@ class MongoDBService:
                 cd.patient_data = MedicalPatientData()
             
             pd = cd.patient_data
-            pd.first_name = clinical_dict.get('first_name', '')
-            pd.last_name = clinical_dict.get('last_name', '')
-            pd.birth_date = clinical_dict.get('birth_date', '')
-            pd.birth_place = clinical_dict.get('birth_place', '')
-            pd.gender = clinical_dict.get('gender', '')
-            pd.phone = clinical_dict.get('phone', '')
-            pd.residence_city = clinical_dict.get('residence_city', '')
-            pd.residence_address = clinical_dict.get('residence_address', '')
-            pd.access_mode = clinical_dict.get('access_mode', '')
+            
+            # Funzione helper per gestire valori sicuri (inclusi array)
+            def safe_str(value):
+                if isinstance(value, list):
+                    # Se è un array, prendi il primo elemento se disponibile
+                    return str(value[0]) if value and len(value) > 0 else ''
+                return str(value) if value is not None else ''
+            
+            # Aggiorna i campi del paziente con gestione sicura
+            pd.first_name = safe_str(clinical_dict.get('first_name', ''))
+            pd.last_name = safe_str(clinical_dict.get('last_name', ''))
+            pd.codice_fiscale = safe_str(clinical_dict.get('codice_fiscale', ''))
+            pd.birth_date = safe_str(clinical_dict.get('birth_date', ''))
+            pd.birth_place = safe_str(clinical_dict.get('birth_place', ''))
+            pd.gender = safe_str(clinical_dict.get('gender', ''))
+            pd.phone = safe_str(clinical_dict.get('phone', ''))
+            pd.residence_city = safe_str(clinical_dict.get('residence_city', ''))
+            pd.residence_address = safe_str(clinical_dict.get('residence_address', ''))
+            pd.access_mode = safe_str(clinical_dict.get('access_mode', ''))
             
             # Gestisci età come int
             age_value = clinical_dict.get('age')
             if age_value and age_value != '':
                 try:
+                    if isinstance(age_value, list) and age_value:
+                        age_value = age_value[0]
                     pd.age = int(age_value)
                 except (ValueError, TypeError):
                     pd.age = None
             
-            # Aggiorna parametri vitali
+            # Aggiorna parametri vitali con gestione sicura
             if not cd.vital_signs:
                 cd.vital_signs = VitalSigns()
             
             vs = cd.vital_signs
-            vs.heart_rate = clinical_dict.get('heart_rate', '')
-            vs.blood_pressure = clinical_dict.get('blood_pressure', '')
-            vs.oxygenation = clinical_dict.get('oxygen_saturation', '')
-            vs.blood_glucose = clinical_dict.get('blood_glucose', '')
+            # I vital signs devono essere stringhe, non array
+            vs.heart_rate = safe_str(clinical_dict.get('heart_rate', ''))
+            vs.blood_pressure = safe_str(clinical_dict.get('blood_pressure', ''))
+            vs.oxygenation = safe_str(clinical_dict.get('oxygen_saturation', ''))
+            vs.blood_glucose = safe_str(clinical_dict.get('blood_glucose', ''))
             
             # Gestisci temperatura come float
             temp_value = clinical_dict.get('temperature')
             if temp_value and temp_value != '':
                 try:
+                    if isinstance(temp_value, list) and temp_value:
+                        temp_value = temp_value[0]
                     vs.temperature = float(temp_value)
                 except (ValueError, TypeError):
                     vs.temperature = None
             
-            # Aggiorna valutazione clinica
+            # Aggiorna valutazione clinica con gestione sicura
             if not cd.clinical_assessment:
                 cd.clinical_assessment = ClinicalAssessment()
             
             ca = cd.clinical_assessment
-            ca.symptoms = clinical_dict.get('symptoms', '')
-            ca.assessment = clinical_dict.get('diagnosis', '')
-            ca.triage_code = clinical_dict.get('triage_code', '')
-            ca.skin_state = clinical_dict.get('skin_state', '')
-            ca.consciousness_state = clinical_dict.get('consciousness_state', '')
-            ca.pupils_state = clinical_dict.get('pupils_state', '')
-            ca.respiratory_state = clinical_dict.get('respiratory_state', '')
-            ca.history = clinical_dict.get('history', '')
-            ca.medications_taken = clinical_dict.get('medications_taken', '')
-            ca.medical_actions = clinical_dict.get('medical_actions', '')
-            ca.plan = clinical_dict.get('plan', '')
-            ca.medical_notes = clinical_dict.get('medical_notes', '')
+            ca.symptoms = safe_str(clinical_dict.get('symptoms', ''))
+            ca.assessment = safe_str(clinical_dict.get('diagnosis', ''))
+            ca.triage_code = safe_str(clinical_dict.get('triage_code', ''))
+            ca.skin_state = safe_str(clinical_dict.get('skin_state', ''))
+            ca.consciousness_state = safe_str(clinical_dict.get('consciousness_state', ''))
+            ca.pupils_state = safe_str(clinical_dict.get('pupils_state', ''))
+            ca.respiratory_state = safe_str(clinical_dict.get('respiratory_state', ''))
+            ca.history = safe_str(clinical_dict.get('history', ''))
+            ca.medications_taken = safe_str(clinical_dict.get('medications_taken', ''))
+            ca.medical_actions = safe_str(clinical_dict.get('medical_actions', ''))
+            ca.plan = safe_str(clinical_dict.get('plan', ''))
+            
+            # Aggiorna metadati
+            cd.extraction_timestamp = datetime.utcnow()
+            cd.is_validated = True  # Consideralo validato visto che viene dall'interfaccia
             
             # Aggiorna status transcript
             transcript.processing_status = 'extracted'
             transcript.save()
             
-            logger.info(f"Dati clinici aggiornati per transcript {transcript_id}")
+            logger.info(f"Dati clinici aggiornati con successo per transcript {transcript_id}")
             return True
             
         except Exception as e:
             logger.error(f"Errore aggiornamento dati clinici per transcript {transcript_id}: {e}")
+            logger.error(f"Dati ricevuti: {clinical_dict}")
+            logger.error(f"Traceback completo: ", exc_info=True)
             return False
     
     def get_all_visits_summary(self) -> List[Dict[str, Any]]:

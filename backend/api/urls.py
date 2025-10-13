@@ -33,7 +33,7 @@ urlpatterns = [
     
     # Medical workflow endpoints
     path('dashboard/analytics/', dashboard_analytics, name='dashboard-analytics'),
-    path('patients/list/', patients_list, name='patients-list'),
+    path('workflow/patients/list/', patients_list, name='patients-list'),
     path('visits/process-audio/', process_audio_visit, name='process-audio-visit'),
     path('patients/<str:patient_id>/visits/', patient_visit_history, name='patient-visit-history'),
     path('patients/<str:patient_id>/update/', update_patient_data, name='update-patient-data'),

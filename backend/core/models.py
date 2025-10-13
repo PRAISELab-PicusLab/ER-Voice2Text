@@ -186,6 +186,7 @@ class ClinicalData(models.Model):
     # Dati anagrafici estratti
     patient_name = models.CharField(max_length=200, blank=True)
     patient_age = models.IntegerField(null=True, blank=True)
+    codice_fiscale = models.CharField(max_length=16, blank=True)
     patient_gender = models.CharField(max_length=10, blank=True)
     
     # Anamnesi

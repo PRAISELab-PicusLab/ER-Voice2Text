@@ -88,17 +88,21 @@ const NewEmergencyPage = () => {
       // Carica la trascrizione esistente
       medicalWorkflowAPI.getInterventionDetails(interventionData.transcript_id)
         .then(details => {
+          console.log('DEBUG: Dati caricati dall\'API:', details)
           if (details.transcript_text) {
             setTranscriptText(details.transcript_text)
             setEditedTranscript(details.transcript_text)
           }
           if (details.clinical_data) {
             const clinicalData = details.clinical_data
+            console.log('DEBUG: clinical_data ricevuto:', clinicalData)
+            console.log('DEBUG: Codice fiscale nei clinical_data:', clinicalData.codice_fiscale)
             // Se il triage_code non è presente nei dati clinici ma c'è in emergencyData, usalo
             if (!clinicalData.triage_code && emergencyData.codice_triage) {
               clinicalData.triage_code = emergencyData.codice_triage
             }
             setExtractedData({ extracted_data: clinicalData })
+            console.log('DEBUG: extractedData impostato:', { extracted_data: clinicalData })
           }
         })
         .catch(error => {
@@ -141,6 +145,13 @@ const NewEmergencyPage = () => {
       return medicalWorkflowAPI.extractClinicalData(transcriptId, editedTranscript)
     },
     onSuccess: (data) => {
+      // Preserva il codice fiscale esistente se quello nuovo è vuoto
+      if (extractedData?.extracted_data?.codice_fiscale && 
+          (!data.extracted_data.codice_fiscale || !data.extracted_data.codice_fiscale.trim())) {
+        data.extracted_data.codice_fiscale = extractedData.extracted_data.codice_fiscale
+        console.log('DEBUG: Preservato codice fiscale esistente:', extractedData.extracted_data.codice_fiscale)
+      }
+      
       // Se il triage_code non è presente nei dati estratti, usa quello da emergencyData
       if (data.extracted_data && !data.extracted_data.triage_code && emergencyData.codice_triage) {
         data.extracted_data.triage_code = emergencyData.codice_triage
@@ -794,7 +805,11 @@ const NewEmergencyPage = () => {
                                 placeholder="RSSMRA80A01H501Z"
                                 maxLength="16"
                                 value={extractedData.extracted_data.codice_fiscale || ''}
-                                onChange={(e) => handleExtractedDataChange('codice_fiscale', e.target.value.toUpperCase())}
+                                onChange={(e) => {
+                                  console.log('DEBUG: Modifica codice fiscale:', e.target.value)
+                                  handleExtractedDataChange('codice_fiscale', e.target.value.toUpperCase())
+                                }}
+                                onFocus={() => console.log('DEBUG: Campo codice fiscale in focus, valore attuale:', extractedData.extracted_data.codice_fiscale)}
                                 style={{ fontFamily: 'monospace' }}
                               />
                               <button

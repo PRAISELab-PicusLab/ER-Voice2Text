@@ -47,7 +47,7 @@ class MedicalPatientData(EmbeddedDocument):
     # Anagrafica
     first_name = fields.StringField()
     last_name = fields.StringField()
-    codice_fiscale = fields.StringField(max_length=16, help_text="Codice Fiscale italiano")
+    codice_fiscale = fields.StringField(max_length=16)
     age = fields.IntField()
     gender = fields.StringField()
     birth_date = fields.StringField()

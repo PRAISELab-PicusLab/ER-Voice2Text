@@ -186,7 +186,6 @@ Requisiti:
 Informazioni richieste:
 - first_name: nome del paziente
 - last_name: cognome del paziente  
-- codice_fiscale: codice fiscale italiano del paziente (16 caratteri alfanumerici)
 - access_mode: modalità di arrivo del paziente
 - birth_date: data di nascita (YYYY-MM-DD)
 - birth_place: luogo di nascita

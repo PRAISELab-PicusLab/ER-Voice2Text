@@ -384,6 +384,114 @@ class MongoDBService:
             logger.error(f"Errore conteggio pazienti in attesa: {e}")
             return 0
     
+    def get_completed_visits_today(self) -> int:
+        """
+        Conta le visite completate oggi (con status 'extracted' o 'validated')
+        """
+        if not self.connected:
+            return 0
+        
+        try:
+            today_start = datetime.combine(date.today(), datetime.min.time())
+            today_end = datetime.combine(date.today(), datetime.max.time())
+            
+            count = AudioTranscript.objects(
+                created_at__gte=today_start,
+                created_at__lte=today_end,
+                processing_status__in=['extracted', 'validated']
+            ).count()
+            
+            return count
+            
+        except Exception as e:
+            logger.error(f"Errore conteggio visite completate oggi: {e}")
+            return 0
+    
+    def get_unique_patients(self) -> List[Dict[str, Any]]:
+        """
+        Recupera lista di pazienti unici raggruppati per codice fiscale da tutti gli interventi
+        """
+        if not self.connected:
+            return []
+        
+        try:
+            # Recupera tutti i transcript con dati clinici
+            transcripts = AudioTranscript.objects(clinical_data__exists=True).only(
+                'transcript_id', 'clinical_data', 'created_at', 'processing_status'
+            )
+            
+            # Raggruppa per codice fiscale
+            patients_dict = {}
+            
+            for transcript in transcripts:
+                if not transcript.clinical_data or not transcript.clinical_data.patient_data:
+                    continue
+                
+                pd = transcript.clinical_data.patient_data
+                codice_fiscale = pd.codice_fiscale
+                
+                # Salta se non c'è codice fiscale
+                if not codice_fiscale:
+                    continue
+                
+                # Se il paziente non esiste ancora nel dizionario, crealo
+                if codice_fiscale not in patients_dict:
+                    patients_dict[codice_fiscale] = {
+                        'patient_id': codice_fiscale,  # Usa codice fiscale come ID unico
+                        'fiscal_code': codice_fiscale,
+                        'codice_fiscale': codice_fiscale,
+                        'first_name': pd.first_name or '',
+                        'last_name': pd.last_name or '',
+                        'age': pd.age or '',
+                        'gender': pd.gender or '',
+                        'phone': pd.phone or '',
+                        'residence_city': pd.residence_city or '',
+                        'residence_address': pd.residence_address or '',
+                        'total_visits': 0,
+                        'last_visit_date': None,
+                        'last_triage_code': '',
+                        'status': 'completed',  # Default status
+                        'interventions': []  # Lista degli ID interventi
+                    }
+                
+                patient = patients_dict[codice_fiscale]
+                
+                # Aggiorna statistiche visite
+                patient['total_visits'] += 1
+                patient['interventions'].append(transcript.transcript_id)
+                
+                # Aggiorna ultima visita se questa è più recente
+                if (not patient['last_visit_date'] or 
+                    transcript.created_at > patient['last_visit_date']):
+                    patient['last_visit_date'] = transcript.created_at
+                    
+                    # Aggiorna ultimo codice triage se disponibile
+                    if (transcript.clinical_data.clinical_assessment and 
+                        transcript.clinical_data.clinical_assessment.triage_code):
+                        patient['last_triage_code'] = transcript.clinical_data.clinical_assessment.triage_code
+                
+                # Aggiorna status in base all'ultimo processing_status
+                if transcript.processing_status == 'in_progress':
+                    patient['status'] = 'in_progress'
+                elif patient['status'] != 'in_progress':  # Non sovrascrive in_progress
+                    patient['status'] = 'completed' if transcript.processing_status == 'extracted' else 'waiting'
+            
+            # Converti in lista e formatta date
+            patients_list = []
+            for patient in patients_dict.values():
+                if patient['last_visit_date']:
+                    patient['last_visit_date'] = patient['last_visit_date'].isoformat()
+                patients_list.append(patient)
+            
+            # Ordina per cognome, nome
+            patients_list.sort(key=lambda p: (p.get('last_name', ''), p.get('first_name', '')))
+            
+            return patients_list
+            
+        except Exception as e:
+            logger.error(f"Errore recupero pazienti unici: {e}")
+            return []
+    
     def update_patient_data(self, patient_id: str, updated_data: Dict[str, Any]) -> bool:
         """
         Aggiorna i dati anagrafici di un paziente nell'ultima visita
@@ -460,6 +568,7 @@ class MongoDBService:
                 # Anagrafica
                 'first_name': pd.first_name or '',
                 'last_name': pd.last_name or '',
+                'codice_fiscale': pd.codice_fiscale or '',
                 'age': pd.age or '',
                 'gender': pd.gender or '',
                 'birth_date': pd.birth_date or '',
@@ -553,7 +662,15 @@ class MongoDBService:
             # Aggiorna i campi del paziente con gestione sicura
             pd.first_name = safe_str(clinical_dict.get('first_name', ''))
             pd.last_name = safe_str(clinical_dict.get('last_name', ''))
-            pd.codice_fiscale = safe_str(clinical_dict.get('codice_fiscale', ''))
+            
+            # Per il codice fiscale, preserva quello esistente se il nuovo è vuoto
+            new_codice_fiscale = safe_str(clinical_dict.get('codice_fiscale', ''))
+            existing_codice_fiscale = pd.codice_fiscale or ''
+            
+            if new_codice_fiscale.strip():  # Solo se il nuovo valore non è vuoto
+                pd.codice_fiscale = new_codice_fiscale
+            # Altrimenti mantieni quello esistente (non sovrascrivere con stringa vuota)
+            
             pd.birth_date = safe_str(clinical_dict.get('birth_date', ''))
             pd.birth_place = safe_str(clinical_dict.get('birth_place', ''))
             pd.gender = safe_str(clinical_dict.get('gender', ''))
@@ -669,6 +786,8 @@ class MongoDBService:
                     'visit_date': transcript.created_at.strftime('%d/%m/%Y'),
                     'visit_time': transcript.created_at.strftime('%H:%M'),
                     'patient_name': f"{pd.first_name or ''} {pd.last_name or ''}".strip() if pd else 'Paziente Anonimo',
+                    'fiscal_code': pd.codice_fiscale if pd else '',  # Per compatibilità filtri
+                    'codice_fiscale': pd.codice_fiscale if pd else '',  # Per visualizzazione
                     'triage_code': ca.triage_code if ca else '',
                     'symptoms': ca.symptoms[:100] + '...' if ca and ca.symptoms and len(ca.symptoms) > 100 else (ca.symptoms if ca else ''),
                     'status': display_status,
@@ -731,6 +850,7 @@ class MongoDBService:
                     clinical_data['patient_data'] = {
                         'first_name': pd.first_name or '',
                         'last_name': pd.last_name or '',
+                        'codice_fiscale': pd.codice_fiscale or '',
                         'age': pd.age or '',
                         'gender': pd.gender or '',
                         'birth_date': pd.birth_date or '',

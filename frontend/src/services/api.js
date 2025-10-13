@@ -459,7 +459,7 @@ export const medicalWorkflowAPI = {
 
   // Lista pazienti con filtri
   getPatientsList: async (filter = 'all') => {
-    const response = await apiClient.get('/api/patients/list/', {
+    const response = await apiClient.get('/api/workflow/patients/list/', {
       params: { filter }
     })
     return response.data
@@ -471,7 +471,7 @@ export const medicalWorkflowAPI = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 120000, // 2 minuti per processing completo
+      timeout: 240000, // 4 minuti per processing completo
     })
     return response.data
   },
@@ -487,7 +487,7 @@ export const medicalWorkflowAPI = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 120000, // 2 minuti per processing completo
+      timeout: 240000, // 4 minuti per processing completo
     })
     return response.data
   },

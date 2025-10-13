@@ -92,13 +92,11 @@ def dashboard_analytics(request):
         total_patients = len(mongodb_service.get_all_patients_summary())
         visits_today = mongodb_service.get_visits_today()
         waiting_patients = mongodb_service.get_waiting_patients_count()
+        completed_today = mongodb_service.get_completed_visits_today()
         
         # Statistiche Django
         total_encounters = Encounter.objects.count()
         active_encounters = Encounter.objects.filter(status='in_progress').count()
-        completed_today = Encounter.objects.filter(
-            discharge_time__date=date.today()
-        ).count()
         
         # Distribuzione triage (ultime 24h)
         from django.utils import timezone
@@ -143,51 +141,23 @@ def patients_list(request):
     try:
         filter_type = request.GET.get('filter', 'all')  # all, waiting, completed
         
-        # Recupera pazienti da Django (database principale)
-        patients_query = Patient.objects.all().order_by('last_name', 'first_name')
+        # Recupera tutti i pazienti unici raggruppati per codice fiscale da MongoDB
+        unique_patients = mongodb_service.get_unique_patients()
         
-        # Recupera anche dati da MongoDB per arricchire con visite
-        mongo_patients = mongodb_service.get_all_patients_summary()
-        mongo_dict = {p['patient_id']: p for p in mongo_patients}
-        
-        # Costruisci lista arricchita
-        enriched_patients = []
-        for patient in patients_query:
-            # Dati base da Django
-            patient_data = {
-                'patient_id': str(patient.patient_id),
-                'fiscal_code': patient.fiscal_code,
-                'first_name': patient.first_name,
-                'last_name': patient.last_name,
-                'age': patient.age,
-                'gender': patient.gender,
-                'phone': patient.phone,
-                'emergency_contact': patient.emergency_contact,
-                'blood_type': patient.blood_type,
-                'allergies': patient.allergies,
-                'created_at': patient.created_at.isoformat(),
-            }
-            
-            # Arricchisci con dati MongoDB se disponibili
-            mongo_data = mongo_dict.get(str(patient.patient_id), {})
-            patient_data.update({
-                'total_visits': mongo_data.get('total_visits', 0),
-                'last_visit_date': mongo_data.get('last_visit_date'),
-                'last_triage_code': mongo_data.get('last_triage_code'),
-                'status': mongo_data.get('status', 'waiting'),  # Default waiting
-            })
-            
-            # Applica filtri
-            if filter_type == 'waiting' and patient_data['status'] != 'in_progress':
+        # Applica filtri se necessario
+        filtered_patients = []
+        for patient in unique_patients:
+            # Applica filtri - aggiorna mapping per stati corretti
+            if filter_type == 'waiting' and patient['status'] != 'in_progress':
                 continue
-            elif filter_type == 'completed' and patient_data['status'] != 'completed':
+            elif filter_type == 'completed' and patient['status'] != 'completed':
                 continue
             
-            enriched_patients.append(patient_data)
+            filtered_patients.append(patient)
         
         return Response({
-            'patients': enriched_patients,
-            'total_count': len(enriched_patients),
+            'patients': filtered_patients,
+            'total_count': len(filtered_patients),
             'filter': filter_type
         })
         
@@ -810,10 +780,63 @@ def intervention_details(request, transcript_id):
             elif processing_status == 'in_progress':
                 next_step = 'transcribing'  # La trascrizione è ancora in corso
         
+        # Converti dati clinici nidificati in formato piatto per compatibilità frontend
+        clinical_data_flat = {}
+        if visit_data.get('clinical_data'):
+            cd = visit_data['clinical_data']
+            
+            # Dati paziente
+            if cd.get('patient_data'):
+                pd = cd['patient_data']
+                clinical_data_flat.update({
+                    'first_name': pd.get('first_name', ''),
+                    'last_name': pd.get('last_name', ''),
+                    'codice_fiscale': pd.get('codice_fiscale', ''),
+                    'age': pd.get('age', ''),
+                    'gender': pd.get('gender', ''),
+                    'birth_date': pd.get('birth_date', ''),
+                    'birth_place': pd.get('birth_place', ''),
+                    'residence_city': pd.get('residence_city', ''),
+                    'residence_address': pd.get('residence_address', ''),
+                    'phone': pd.get('phone', ''),
+                    'access_mode': pd.get('access_mode', '')
+                })
+            
+            # Parametri vitali
+            if cd.get('vital_signs'):
+                vs = cd['vital_signs']
+                clinical_data_flat.update({
+                    'heart_rate': vs.get('heart_rate', ''),
+                    'blood_pressure': vs.get('blood_pressure', ''),
+                    'temperature': vs.get('temperature', ''),
+                    'oxygen_saturation': vs.get('oxygen_saturation', ''),
+                    'blood_glucose': vs.get('blood_glucose', '')
+                })
+            
+            # Valutazione clinica
+            if cd.get('clinical_assessment'):
+                ca = cd['clinical_assessment']
+                clinical_data_flat.update({
+                    'symptoms': ca.get('symptoms', ''),
+                    'diagnosis': ca.get('diagnosis', ''),
+                    'assessment': ca.get('assessment', ''),
+                    'treatment': ca.get('treatment', ''),
+                    'medical_notes': ca.get('medical_notes', ''),
+                    'triage_code': ca.get('triage_code', ''),
+                    'skin_state': ca.get('skin_state', ''),
+                    'consciousness_state': ca.get('consciousness_state', ''),
+                    'pupils_state': ca.get('pupils_state', ''),
+                    'respiratory_state': ca.get('respiratory_state', ''),
+                    'history': ca.get('history', ''),
+                    'medications_taken': ca.get('medications_taken', ''),
+                    'medical_actions': ca.get('medical_actions', ''),
+                    'plan': ca.get('plan', '')
+                })
+        
         response_data = {
             'transcript_id': transcript_id,
             'visit_data': visit_data,
-            'clinical_data': visit_data.get('clinical_data', {}),  # Aggiungi questo per compatibilità frontend
+            'clinical_data': clinical_data_flat,  # Formato piatto per compatibilità frontend
             'report_content': report_content,
             'has_clinical_data': bool(visit_data.get('clinical_data')),
             'transcript_text': visit_data.get('transcript_text', ''),
@@ -824,6 +847,8 @@ def intervention_details(request, transcript_id):
             'patient_id': visit_data.get('patient_id'),
         }
         
+        # Debug log per controllare i dati inviati
+        logger.info(f"Clinical data inviati per {transcript_id}: codice_fiscale = {clinical_data_flat.get('codice_fiscale', 'ASSENTE')}")
         logger.info(f"Risposta preparata per {transcript_id}: can_resume={can_resume}, next_step={next_step}")
         
         return Response(response_data)

@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { medicalWorkflowAPI } from '../../services/api'
 import InterventionDetailModal from './InterventionDetailModal'
 
-const InterventionsList = ({ onEditIntervention }) => {
+const InterventionsList = ({ onEditIntervention, fiscalCodeFilter = null }) => {
   const [selectedIntervention, setSelectedIntervention] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -18,10 +18,21 @@ const InterventionsList = ({ onEditIntervention }) => {
   const [filters, setFilters] = useState({
     status: '',
     patientName: '',
+    fiscalCode: fiscalCodeFilter || '', // Aggiungi filtro per codice fiscale
     dateFrom: '',
     dateTo: ''
   })
   const [showFilters, setShowFilters] = useState(true)
+
+  // Effetto per aggiornare il filtro codice fiscale quando cambia la prop
+  useEffect(() => {
+    if (fiscalCodeFilter !== filters.fiscalCode) {
+      setFilters(prev => ({
+        ...prev,
+        fiscalCode: fiscalCodeFilter || ''
+      }))
+    }
+  }, [fiscalCodeFilter])
 
   const { data: interventionsData, isLoading, error, refetch } = useQuery({
     queryKey: ['all-interventions'],
@@ -78,6 +89,11 @@ const InterventionsList = ({ onEditIntervention }) => {
         return false
       }
       
+      // Filtro per codice fiscale
+      if (filters.fiscalCode && !intervention.codice_fiscale?.includes(filters.fiscalCode)) {
+        return false
+      }
+      
       // Filtro per data (from)
       if (filters.dateFrom) {
         const interventionDate = new Date(intervention.created_at)
@@ -106,6 +122,7 @@ const InterventionsList = ({ onEditIntervention }) => {
     setFilters({
       status: '',
       patientName: '',
+      fiscalCode: fiscalCodeFilter || '', // Mantieni filtro per codice fiscale se passato come prop
       dateFrom: '',
       dateTo: ''
     })
@@ -260,6 +277,26 @@ const InterventionsList = ({ onEditIntervention }) => {
             </div>
           </div>
           
+          {/* Banner filtro codice fiscale attivo */}
+          {fiscalCodeFilter && filters.fiscalCode && (
+            <div className="alert alert-info mt-3 mb-0 d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Filtro attivo:</strong> Mostrando solo gli interventi per il codice fiscale <strong>{fiscalCodeFilter}</strong>
+              </div>
+              <button 
+                className="btn btn-outline-info btn-sm"
+                onClick={() => {
+                  setFilters(prev => ({ ...prev, fiscalCode: '' }))
+                  // Rimuovi anche il filtro dalla prop se necessario
+                }}
+                title="Rimuovi filtro"
+              >
+                <i className="bi bi-x-circle me-1"></i>
+                Rimuovi filtro
+              </button>
+            </div>
+          )}
+          
           {/* Header filtri con toggle */}
           <div className="d-flex justify-content-between align-items-center mt-3">
             <h6 className="mb-0 text-muted">
@@ -291,7 +328,7 @@ const InterventionsList = ({ onEditIntervention }) => {
           }}
         >
           <div className="row g-3">
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label small fw-bold">Stato Intervento</label>
               <select 
                 className="form-select"
@@ -304,7 +341,7 @@ const InterventionsList = ({ onEditIntervention }) => {
               </select>
             </div>
             
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label small fw-bold">Nome Paziente</label>
               <input 
                 type="text"
@@ -312,6 +349,18 @@ const InterventionsList = ({ onEditIntervention }) => {
                 placeholder="Cerca per nome..."
                 value={filters.patientName}
                 onChange={(e) => setFilters({...filters, patientName: e.target.value})}
+              />
+            </div>
+            
+            <div className="col-md-2">
+              <label className="form-label small fw-bold">Codice Fiscale</label>
+              <input 
+                type="text"
+                className="form-control"
+                placeholder="Codice fiscale..."
+                value={filters.fiscalCode}
+                onChange={(e) => setFilters({...filters, fiscalCode: e.target.value.toUpperCase()})}
+                disabled={!!fiscalCodeFilter && filters.fiscalCode === fiscalCodeFilter} // Disabilita solo se filtro attivo corrisponde
               />
             </div>
             
@@ -366,7 +415,7 @@ const InterventionsList = ({ onEditIntervention }) => {
                     <th>Sintomi</th>
                     <th>Stato</th>
                     <th>Dati Clinici</th>
-                    <th className="text-end">Azioni</th>
+                    <th className="text-center">Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -378,6 +427,7 @@ const InterventionsList = ({ onEditIntervention }) => {
                       </td>
                       <td>
                         <div className="fw-bold">{intervention.patient_name}</div>
+                        <small className="text-muted">C.F.: {intervention.codice_fiscale}</small>
                       </td>
                       <td>
                         {intervention.triage_code ? (
@@ -525,7 +575,7 @@ const InterventionsList = ({ onEditIntervention }) => {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className={`modal-header ${notificationType === 'success' ? 'bg-success' : 'bg-danger'} text-white`}>
-                <h5 className="modal-title">
+                <h5 className="modal-title" class='text-white'>
                   <i className={`bi ${notificationType === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2`}></i>
                   {notificationType === 'success' ? 'Operazione Completata' : 'Errore'}
                 </h5>

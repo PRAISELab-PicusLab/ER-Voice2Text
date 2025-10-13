@@ -9,11 +9,11 @@ import AudioRecordingModal from './AudioRecordingModal' Componente per gestione 
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { medicalWorkflowAPI } from '@services/api'
+import { medicalWorkflowAPI } from '../../services/api'
 import PatientModal from './PatientModal'
 import VisitHistoryModal from './VisitHistoryModal'
 
-const PatientsList = () => {
+const PatientsList = ({ onPatientInterventions }) => {
   const [filter, setFilter] = useState('all') // all, waiting, completed
   const [selectedPatient, setSelectedPatient] = useState(null)
   const [showPatientModal, setShowPatientModal] = useState(false)
@@ -48,6 +48,11 @@ const PatientsList = () => {
       case 'view-history':
         setShowVisitHistory(true)
         break
+      case 'view-interventions':
+        if (onPatientInterventions) {
+          onPatientInterventions(patient)
+        }
+        break
       default:
         break
     }
@@ -71,7 +76,7 @@ const PatientsList = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      'in_progress': { class: 'bg-warning', text: 'In Corso' },
+      'in_progress': { class: 'bg-warning', text: 'In Attesa' },
       'completed': { class: 'bg-success', text: 'Completato' }
     }
     
@@ -84,14 +89,54 @@ const PatientsList = () => {
   }
 
   const getTriageColor = (code) => {
+    // Mapping per codici triage in italiano e inglese - stesso stile di InterventionsList
     const colors = {
-      white: 'light',
-      green: 'success',
-      yellow: 'warning',
-      red: 'danger',
-      black: 'dark'
+      // Italiano
+      'bianco': 'secondary',
+      'verde': 'success', 
+      'giallo': 'warning',
+      'rosso': 'danger',
+      // Inglese (legacy)
+      'white': 'secondary',
+      'green': 'success',
+      'yellow': 'warning', 
+      'red': 'danger'
     }
-    return colors[code] || 'secondary'
+    return colors[code?.toLowerCase()] || 'secondary'
+  }
+
+  const getTriageIcon = (code) => {
+    // Mapping per icone con supporto italiano e inglese
+    const icons = {
+      // Italiano
+      'bianco': '⚪',
+      'verde': '🟢',
+      'giallo': '🟡', 
+      'rosso': '🔴',
+      // Inglese (legacy)
+      'white': '⚪',
+      'green': '🟢',
+      'yellow': '🟡',
+      'red': '🔴'
+    }
+    return icons[code?.toLowerCase()] || '⚪'
+  }
+
+  const getTriageDisplayName = (code) => {
+    // Mapping per nomi visualizzati sempre in italiano
+    const displayNames = {
+      // Italiano (mantieni)
+      'bianco': 'BIANCO',
+      'verde': 'VERDE',
+      'giallo': 'GIALLO',
+      'rosso': 'ROSSO',
+      // Inglese (converti in italiano)
+      'white': 'BIANCO',
+      'green': 'VERDE',
+      'yellow': 'GIALLO',
+      'red': 'ROSSO'
+    }
+    return displayNames[code?.toLowerCase()] || code?.toUpperCase() || '-'
   }
 
   return (
@@ -117,7 +162,7 @@ const PatientsList = () => {
               onClick={() => setFilter('waiting')}
             >
               <i className="bi bi-clock me-1"></i>
-              Attesa
+              In Attesa
             </button>
             <button 
               className={`btn btn-sm ${filter === 'completed' ? 'btn-success' : 'btn-outline-success'}`}
@@ -159,8 +204,8 @@ const PatientsList = () => {
                       <td>
                         <div>
                           <strong>{patient.first_name} {patient.last_name}</strong>
-                          {patient.fiscal_code && (
-                            <div><small className="text-muted">CF: {patient.fiscal_code}</small></div>
+                          {patient.codice_fiscale && (
+                            <div><small className="text-muted">CF: {patient.codice_fiscale}</small></div>
                           )}
                         </div>
                       </td>
@@ -179,7 +224,11 @@ const PatientsList = () => {
                           {patient.last_visit_date ? new Date(patient.last_visit_date).toLocaleDateString('it-IT') : 'Mai'}
                         </small>
                         {patient.last_triage_code && (
-                          <div><span className={`badge bg-${getTriageColor(patient.last_triage_code)} badge-sm`}>{patient.last_triage_code.toUpperCase()}</span></div>
+                          <div>
+                            <span className={`badge bg-${getTriageColor(patient.last_triage_code)} badge-sm`}>
+                              {getTriageIcon(patient.last_triage_code)} {getTriageDisplayName(patient.last_triage_code)}
+                            </span>
+                          </div>
                         )}
                       </td>
                       <td>{getStatusBadge(patient.status)}</td>
@@ -188,6 +237,9 @@ const PatientsList = () => {
                         <div className="btn-group btn-group-sm">
                           <button className="btn btn-outline-danger" title="Nuova emergenza" onClick={() => handlePatientAction(patient, 'new-emergency')}>
                             <i className="bi bi-mic"></i>
+                          </button>
+                          <button className="btn btn-outline-success" title="I suoi interventi" onClick={() => handlePatientAction(patient, 'view-interventions')}>
+                            <i className="bi bi-list-ul"></i>
                           </button>
                           <button className="btn btn-outline-secondary" title="Modifica dati" onClick={() => handlePatientAction(patient, 'edit-data')}>
                             <i className="bi bi-pencil"></i>
@@ -217,7 +269,7 @@ const PatientsList = () => {
                         </p>
                         {patient.last_triage_code && (
                           <span className={`badge bg-${getTriageColor(patient.last_triage_code)} mt-1`}>
-                            {patient.last_triage_code.toUpperCase()}
+                            {getTriageIcon(patient.last_triage_code)} {getTriageDisplayName(patient.last_triage_code)}
                           </span>
                         )}
                       </div>
@@ -229,6 +281,14 @@ const PatientsList = () => {
                         >
                           <i className="bi bi-mic me-1"></i>
                           Emergenza
+                        </button>
+                        <button 
+                          className="btn btn-outline-success btn-sm"
+                          onClick={() => handlePatientAction(patient, 'view-interventions')}
+                          style={{ minWidth: '80px' }}
+                        >
+                          <i className="bi bi-list-ul me-1"></i>
+                          Interventi
                         </button>
                         <button 
                           className="btn btn-outline-secondary btn-sm"

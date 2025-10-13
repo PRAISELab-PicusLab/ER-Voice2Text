@@ -112,13 +112,14 @@ class PDFReportService:
         y -= 25  # Spazio aumentato
 
         text = (
-            f"<b>Nome:</b> {data.get('first_name', '')} {data.get('last_name', '')}<br/>"
-            f"<b>Sesso:</b> {data.get('gender', '')} &nbsp;&nbsp;&nbsp; "
+            f"<b>Nome:</b> {data.get('first_name', '')}  <b>Cognome:</b> {data.get('last_name', '')} "
+            f"<b>Codice Fiscale:</b> {data.get('codice_fiscale', '')}<br/>"
+            f"<b>Sesso:</b> {data.get('gender', '')} "
             f"<b>Età:</b> {data.get('age', '')}<br/>"
             f"<b>Data di nascita:</b> {data.get('birth_date', '')} "
-            f" - <b>Luogo:</b> {data.get('birth_place', '')}<br/>"
-            f"<b>Residenza:</b> {data.get('residence_city', '')}, "
-            f"{data.get('residence_address', '')}<br/>"
+            f" - <b>Luogo di nascita:</b> {data.get('birth_place', '')}<br/>"
+            f"<b>Città di residenza:</b> {data.get('residence_city', '')} "
+            f" - <b>Indirizzo di residenza:</b> {data.get('residence_address', '')}<br/>"
             f"<b>Telefono:</b> {data.get('phone', '')}<br/><br/>"
             f"<b>Motivo Accesso:</b> {data.get('symptoms', '')}<br/>"
             f"<b>Modalità Accesso:</b> {data.get('access_mode', '')}"

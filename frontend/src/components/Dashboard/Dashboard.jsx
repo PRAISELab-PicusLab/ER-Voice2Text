@@ -10,6 +10,7 @@ const Dashboard = () => {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('interventions')
+  const [fiscalCodeFilter, setFiscalCodeFilter] = useState(null) // Filtro per codice fiscale
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ['dashboard-analytics'],
@@ -25,6 +26,12 @@ const Dashboard = () => {
         interventionData: intervention 
       } 
     })
+  }
+
+  const handlePatientInterventions = (patient) => {
+    // Imposta il filtro per codice fiscale e passa alla tab interventi
+    setFiscalCodeFilter(patient.codice_fiscale)
+    setActiveTab('interventions')
   }
 
   const getTriageColor = (priority) => {
@@ -127,13 +134,16 @@ const Dashboard = () => {
                 onClick={() => setActiveTab('interventions')}
               >
                 <i className="bi bi-clipboard-data me-2"></i>
-                Tutti gli Interventi
+                Tutti gli Interventi {fiscalCodeFilter && <span className="badge bg-primary ms-1">Filtrati</span>}
               </button>
             </li>
             <li className="nav-item">
               <button 
                 className={`nav-link ${activeTab === 'patients' ? 'active' : ''}`}
-                onClick={() => setActiveTab('patients')}
+                onClick={() => {
+                  setActiveTab('patients')
+                  setFiscalCodeFilter(null) // Pulisci filtro quando si va sui pazienti
+                }}
               >
                 <i className="bi bi-people me-2"></i>
                 Pazienti
@@ -146,7 +156,14 @@ const Dashboard = () => {
       {/* Main content based on active tab */}
       <div className="row">
         <div className="col">
-          {activeTab === 'patients' ? <PatientsList /> : <InterventionsList onEditIntervention={handleEditIntervention} />}
+          {activeTab === 'patients' ? (
+            <PatientsList onPatientInterventions={handlePatientInterventions} />
+          ) : (
+            <InterventionsList 
+              onEditIntervention={handleEditIntervention} 
+              fiscalCodeFilter={fiscalCodeFilter}
+            />
+          )}
         </div>
       </div>
       

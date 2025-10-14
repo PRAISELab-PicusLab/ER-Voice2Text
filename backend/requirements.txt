@@ -35,6 +35,9 @@ huggingface-hub==0.19.4
 accelerate==0.25.0
 datasets==2.15.0
 sentence-transformers==2.2.2
+# Named Entity Recognition dependencies
+torch-audio==2.1.1
+tokenizers==0.15.0
 
 # NVIDIA NIM LLM API
 openai==1.12.0

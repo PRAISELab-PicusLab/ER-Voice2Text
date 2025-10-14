@@ -694,11 +694,12 @@ class MongoDBService:
             # I vital signs devono essere stringhe, non array
             vs.heart_rate = safe_str(clinical_dict.get('heart_rate', ''))
             vs.blood_pressure = safe_str(clinical_dict.get('blood_pressure', ''))
-            vs.oxygenation = safe_str(clinical_dict.get('oxygen_saturation', ''))
+            vs.oxygenation = safe_str(clinical_dict.get('oxygenation', ''))
             vs.blood_glucose = safe_str(clinical_dict.get('blood_glucose', ''))
             
             # Gestisci temperatura come float
             temp_value = clinical_dict.get('temperature')
+            temp_value = temp_value.split("°C")[0]
             if temp_value and temp_value != '':
                 try:
                     if isinstance(temp_value, list) and temp_value:

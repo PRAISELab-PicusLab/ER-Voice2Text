@@ -182,6 +182,7 @@ Requisiti:
 - Mantieni il JSON compatto e ben formattato.
 - Per i campi non esplicitamente menzionati nel testo, restituisci una stringa vuota "".
 - Estrai solo informazioni effettivamente presenti nel testo.
+- IMPORTANTE: Per i parametri vitali, INCLUDI SEMPRE le unità di misura quando disponibili.
 
 Informazioni richieste:
 - first_name: nome del paziente
@@ -201,11 +202,11 @@ Informazioni richieste:
 - history: anamnesi
 - medications_taken: farmaci assunti
 - symptoms: sintomi riferiti
-- heart_rate: frequenza cardiaca (formato: numero + "bpm")
-- oxygenation: saturazione ossigeno (formato: numero + "%")
-- blood_pressure: pressione arteriosa (formato: "sistolica/diastolica")
-- temperature: temperatura corporea (numero decimale)
-- blood_glucose: glicemia (formato: numero + "mg/dl")
+- heart_rate: frequenza cardiaca (INCLUDI unità: es. "120 bpm")
+- oxygenation: saturazione ossigeno (INCLUDI unità: es. "95%")
+- blood_pressure: pressione arteriosa (INCLUDI unità: es. "120/80 mmHg")
+- temperature: temperatura corporea (INCLUDI unità: es. "37.2°C")
+- blood_glucose: glicemia (INCLUDI unità: es. "110 mg/dl")
 - medical_actions: azioni mediche effettuate
 - assessment: valutazione clinica
 - plan: piano terapeutico
@@ -251,7 +252,7 @@ JSON:
     
     def _normalize_fields(self, data: Dict[str, Any], usage_mode: str = "") -> Dict[str, Any]:
         """
-        Normalizza i campi estratti seguendo la logica del Project 2
+        Normalizza i campi estratti mantenendo le unità di misura quando appropriate
         """
         import re
         
@@ -263,44 +264,121 @@ JSON:
             if isinstance(value, str) and value.strip().lower() in null_values:
                 normalized[key] = ""
         
-        # Normalizzazione frequenza cardiaca
+        # Normalizzazione frequenza cardiaca - mantieni unità
         if data.get("heart_rate"):
-            match = re.search(r"\b(\d{2,3})\b", str(data["heart_rate"]))
-            normalized["heart_rate"] = int(match.group(1)) if match else ""
-        
-        # Normalizzazione saturazione ossigeno
-        if data.get("oxygenation"):
-            value = str(data["oxygenation"])
-            match = re.search(r"\b(\d{1,3})\b", value)
-            if match:
-                oxy_value = match.group(1)
-                normalized["oxygenation"] = f"{oxy_value}%"
+            value_str = str(data["heart_rate"])
+            # Se ha già bpm, mantienilo
+            if 'bpm' in value_str.lower() or 'battiti' in value_str.lower():
+                normalized["heart_rate"] = value_str
             else:
-                normalized["oxygenation"] = ""
-        
-        # Normalizzazione temperatura
-        if data.get("temperature"):
-            value = str(data["temperature"]).replace(",", ".")
-            match = re.search(r"([-+]?\d+(\.\d+)?)", value)
-            normalized["temperature"] = float(match.group(1)) if match else ""
-        
-        # Normalizzazione glicemia
-        if data.get("blood_glucose"):
-            match = re.search(r"\b(\d{2,3})\b", str(data["blood_glucose"]))
-            normalized["blood_glucose"] = int(match.group(1)) if match else ""
-        
-        # Normalizzazione pressione arteriosa
-        if data.get("blood_pressure"):
-            value = str(data["blood_pressure"])
-            if "/" in value:
-                match = re.search(r"\b(\d{2,3})\s*/\s*(\d{2,3})\b", value)
-                normalized["blood_pressure"] = f"{match.group(1)}/{match.group(2)}" if match else ""
-            else:
-                match = re.findall(r"\b(\d{2,3})\b", value)
-                if len(match) == 2:
-                    normalized["blood_pressure"] = f"{match[0]}/{match[1]}"
+                # Pattern migliorati per gestire spazi
+                hr_patterns = [
+                    r'(\d{2,3})\s*(bpm|battiti)',  # "120 bpm" con spazi
+                    r'(\d{2,3})',                  # solo numero
+                ]
+                
+                for pattern in hr_patterns:
+                    match = re.search(pattern, value_str.lower())
+                    if match:
+                        number = match.group(1)
+                        normalized["heart_rate"] = f"{number} bpm"
+                        break
                 else:
-                    normalized["blood_pressure"] = ""
+                    normalized["heart_rate"] = ""
+        
+        # Normalizzazione saturazione ossigeno - mantieni %
+        if data.get("oxygenation"):
+            value_str = str(data["oxygenation"])
+            # Se ha già %, mantienilo
+            if '%' in value_str or 'percento' in value_str.lower():
+                normalized["oxygenation"] = value_str
+            else:
+                # Pattern migliorati per gestire spazi
+                oxy_patterns = [
+                    r'(\d{1,3})\s*(%|percento)',  # "95 %" con spazi
+                    r'(\d{1,3})',                 # solo numero
+                ]
+                
+                for pattern in oxy_patterns:
+                    match = re.search(pattern, value_str.lower())
+                    if match:
+                        number = match.group(1)
+                        normalized["oxygenation"] = f"{number}%"
+                        break
+                else:
+                    normalized["oxygenation"] = ""
+        
+        # Normalizzazione temperatura - mantieni °C
+        if data.get("temperature"):
+            value_str = str(data["temperature"]).replace(",", ".")
+            # Se ha già °C o °, mantienilo
+            if '°' in value_str or 'gradi' in value_str.lower() or 'celsius' in value_str.lower():
+                normalized["temperature"] = value_str
+            else:
+                # Pattern migliorati per temperatura con spazi
+                temp_patterns = [
+                    r'([-+]?\d+(?:\.\d+)?)\s*(°c?|gradi|celsius)',  # "37.5 °C" con spazi
+                    r'([-+]?\d+(?:\.\d+)?)',                       # solo numero
+                ]
+                
+                for pattern in temp_patterns:
+                    match = re.search(pattern, value_str.lower())
+                    if match:
+                        number = match.group(1)
+                        normalized["temperature"] = f"{number}°C"
+                        break
+                else:
+                    normalized["temperature"] = ""
+        
+        # Normalizzazione glicemia - mantieni mg/dl
+        if data.get("blood_glucose"):
+            value_str = str(data["blood_glucose"])
+            # Se ha già mg/dl, mantienilo
+            if 'mg' in value_str.lower() or 'mmol' in value_str.lower():
+                normalized["blood_glucose"] = value_str
+            else:
+                # Pattern migliorati per glicemia con spazi
+                glucose_patterns = [
+                    r'(\d{2,3})\s*(mg/dl|mg|mmol/l)',  # "110 mg/dl" con spazi
+                    r'(\d{2,3})',                      # solo numero
+                ]
+                
+                for pattern in glucose_patterns:
+                    match = re.search(pattern, value_str.lower())
+                    if match:
+                        number = match.group(1)
+                        normalized["blood_glucose"] = f"{number} mg/dl"
+                        break
+                else:
+                    normalized["blood_glucose"] = ""
+        
+        # Normalizzazione pressione arteriosa - mantieni mmHg
+        if data.get("blood_pressure"):
+            value_str = str(data["blood_pressure"])
+            # Se ha già mmHg, mantienilo
+            if 'mmhg' in value_str.lower():
+                normalized["blood_pressure"] = value_str
+            else:
+                # Pattern migliorati per gestire spazi in pressione arteriosa
+                bp_patterns = [
+                    r'(\d{2,3})\s*/\s*(\d{2,3})',  # "120 / 70" con spazi
+                    r'(\d{2,3})/(\d{2,3})',        # "120/70" senza spazi  
+                    r'(\d{2,3})\s+su\s+(\d{2,3})', # "120 su 70"
+                    r'(\d{2,3})\s*-\s*(\d{2,3})',  # "120 - 70"
+                ]
+                
+                for pattern in bp_patterns:
+                    match = re.search(pattern, value_str)
+                    if match:
+                        normalized["blood_pressure"] = f"{match.group(1)}/{match.group(2)} mmHg"
+                        break
+                else:
+                    # Fallback: cerca due numeri separati
+                    match = re.findall(r"\b(\d{2,3})\b", value_str)
+                    if len(match) == 2:
+                        normalized["blood_pressure"] = f"{match[0]}/{match[1]} mmHg"
+                    else:
+                        normalized["blood_pressure"] = ""
         
         # Se modalità Checkup, mantieni solo campi specifici
         if usage_mode == "Checkup":
@@ -357,7 +435,8 @@ JSON:
         # Validazione temperatura
         if data.get("temperature") and str(data["temperature"]).strip():
             try:
-                temp_value = float(data["temperature"])
+                temp_value = data["temperature"].split("°C")[0]
+                temp_value = float(temp_value)
                 if not (0 <= temp_value <= 50) or str(int(temp_value)) not in original_text:
                     error_fields.append("temperature")
             except:
@@ -381,4 +460,4 @@ JSON:
 
 
 # Istanza singleton del servizio - solo se necessario
-# nvidia_nim_service = NVIDIANIMService()
+nvidia_nim_service = NVIDIANIMService()

@@ -23,6 +23,7 @@ from services.nvidia_nim import NVIDIANIMService
 from services.whisper_service import whisper_service
 from services.mongodb_service import mongodb_service
 from services.pdf_report import pdf_report_service
+from services.clinical_extraction import clinical_extraction_service
 
 logger = logging.getLogger(__name__)
 
@@ -587,15 +588,42 @@ def transcript_details(request, transcript_id):
         )
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_extraction_methods(request):
+    """
+    Endpoint per ottenere i metodi di estrazione disponibili
+    """
+    try:
+        from services.clinical_extraction import clinical_extraction_service
+        
+        methods = clinical_extraction_service.get_available_methods()
+        
+        return Response({
+            'available_methods': methods,
+            'default_method': clinical_extraction_service.default_method.value,
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        logger.error(f"Errore recupero metodi estrazione: {e}")
+        return Response(
+            {'error': 'Errore recupero metodi estrazione'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def extract_clinical_data_llm(request, transcript_id):
     """
-    Endpoint per estrazione dati clinici LLM con transcript modificato
+    Endpoint per estrazione dati clinici con supporto per LLM e NER
+    Supporta la selezione del metodo di estrazione tramite parametro 'extraction_method'
     """
     try:
         # Recupera i dati da MongoDB
         from services.mongodb_service import mongodb_service
+        from services.clinical_extraction import clinical_extraction_service
         
         transcript_data = mongodb_service.get_visit_data(transcript_id)
         
@@ -625,14 +653,23 @@ def extract_clinical_data_llm(request, transcript_id):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Avvia l'estrazione con NVIDIA NIM usando il testo corretto
-        nvidia_service = NVIDIANIMService()
-        usage_mode = 'Emergency'  # Default per emergenze
-        clinical_data = nvidia_service.extract_clinical_entities(transcript_text, usage_mode)
+        # Determina il metodo di estrazione
+        extraction_method = request.data.get('extraction_method', 'llm').lower()
+        if extraction_method not in ['llm', 'ner']:
+            extraction_method = 'llm'  # Default fallback
         
-        if not clinical_data:
+        usage_mode = request.data.get('usage_mode', 'Emergency')  # Default per emergenze
+        
+        # Avvia l'estrazione con il servizio unificato
+        clinical_data = clinical_extraction_service.extract_clinical_entities(
+            transcript_text, 
+            method=extraction_method,
+            usage_mode=usage_mode
+        )
+        
+        if not clinical_data or clinical_data.get('success', True) is False:
             return Response(
-                {'error': 'Errore durante estrazione entità cliniche'},
+                {'error': clinical_data.get('error', 'Errore durante estrazione entità cliniche')},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
@@ -644,15 +681,21 @@ def extract_clinical_data_llm(request, transcript_id):
         if not update_success:
             logger.warning(f"Errore aggiornamento dati clinici per transcript {transcript_id}")
         
-        logger.info(f"Estrazione LLM completata per transcript {transcript_id}")
+        logger.info(f"Estrazione {extraction_method.upper()} completata per transcript {transcript_id}")
         
         return Response({
             'transcript_id': transcript_id,
             'extracted_data': extracted_data,
             'clinical_data': clinical_data,
+            'extraction_method': extraction_method,
             'validation_errors': clinical_data.get('validation_errors', []),
-            'llm_fallback': clinical_data.get('fallback', False),
-            'llm_warnings': clinical_data.get('warnings', []),
+            'extraction_info': {
+                'method': extraction_method,
+                'model': clinical_data.get('model', 'N/A'),
+                'entities_found': clinical_data.get('entities_found', 0),
+                'timestamp': clinical_data.get('timestamp', ''),
+            },
+            'warnings': clinical_data.get('warnings', []),
             'transcript_updated': bool(updated_transcript),
             'data_saved': update_success,
             'status': 'completed'

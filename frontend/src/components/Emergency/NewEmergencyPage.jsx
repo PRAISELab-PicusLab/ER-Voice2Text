@@ -8,6 +8,87 @@ import { useMutation } from '@tanstack/react-query'
 import { medicalWorkflowAPI, transcriptsAPI } from '../../services/api'
 import { useNavigate, useLocation } from 'react-router-dom'
 
+// CSS personalizzato per lo switch di estrazione
+const extractionSwitchStyles = `
+  .extraction-method-switch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 0.75rem;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+  }
+  
+  .extraction-method-switch:hover {
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .extraction-switch-toggle {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+  }
+  
+  .extraction-switch-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .extraction-switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #007bff;
+    transition: 0.4s;
+    border-radius: 34px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  
+  .extraction-switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  
+  input:checked + .extraction-switch-slider {
+    background-color: #28a745;
+  }
+  
+  input:checked + .extraction-switch-slider:before {
+    transform: translateX(26px);
+  }
+  
+  .extraction-method-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 40px;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  
+  .extraction-method-label.active {
+    font-size: 1rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+`
+
 const NewEmergencyPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -46,6 +127,11 @@ const NewEmergencyPage = () => {
     note_triage: ''
   })
 
+  // Stati per selezione metodo estrazione
+  const [extractionMethods, setExtractionMethods] = useState({})
+  const [selectedExtractionMethod, setSelectedExtractionMethod] = useState('llm')
+  const [extractionInfo, setExtractionInfo] = useState(null)
+
   // Stato per animazione transcribing dinamica
   const [transcribingMessage, setTranscribingMessage] = useState(0)
 
@@ -78,6 +164,54 @@ const NewEmergencyPage = () => {
       return () => clearInterval(interval)
     }
   }, [currentStep])
+
+  // Carica metodi di estrazione disponibili
+  useEffect(() => {
+    const loadExtractionMethods = async () => {
+      try {
+        const methods = await medicalWorkflowAPI.getExtractionMethods()
+        setExtractionMethods(methods.available_methods || {})
+        
+        // Seleziona automaticamente il metodo disponibile
+        const availableMethods = Object.entries(methods.available_methods || {})
+          .filter(([_, info]) => info.available)
+        
+        if (availableMethods.length > 0) {
+          // Se il metodo di default non è disponibile, usa il primo disponibile
+          const defaultMethod = methods.default_method || 'llm'
+          const isDefaultAvailable = methods.available_methods[defaultMethod]?.available
+          
+          if (isDefaultAvailable) {
+            setSelectedExtractionMethod(defaultMethod)
+          } else {
+            setSelectedExtractionMethod(availableMethods[0][0])
+          }
+        } else {
+          // Nessun metodo disponibile - fallback
+          setSelectedExtractionMethod('llm')
+        }
+        
+      } catch (error) {
+        console.error('Errore caricamento metodi estrazione:', error)
+        // Fallback con metodo LLM
+        setExtractionMethods({
+          llm: { 
+            name: 'Large Language Model', 
+            available: true,
+            description: 'Estrazione semantica avanzata'
+          },
+          ner: { 
+            name: 'Named Entity Recognition', 
+            available: false,
+            description: 'Riconoscimento entità nominate (non disponibile)'
+          }
+        })
+        setSelectedExtractionMethod('llm')
+      }
+    }
+
+    loadExtractionMethods()
+  }, [])
 
   // Carica dati intervento in modalità edit
   useEffect(() => {
@@ -139,10 +273,10 @@ const NewEmergencyPage = () => {
     }
   })
 
-  // Mutation per estrazione dati LLM dal transcript modificato
+  // Mutation per estrazione dati clinici con metodo selezionato
   const extractDataMutation = useMutation({
     mutationFn: async (editedTranscript) => {
-      return medicalWorkflowAPI.extractClinicalData(transcriptId, editedTranscript)
+      return medicalWorkflowAPI.extractClinicalData(transcriptId, editedTranscript, selectedExtractionMethod)
     },
     onSuccess: (data) => {
       // Preserva il codice fiscale esistente se quello nuovo è vuoto
@@ -156,6 +290,10 @@ const NewEmergencyPage = () => {
       if (data.extracted_data && !data.extracted_data.triage_code && emergencyData.codice_triage) {
         data.extracted_data.triage_code = emergencyData.codice_triage
       }
+      
+      // Salva informazioni sull'estrazione
+      setExtractionInfo(data.extraction_info || {})
+      
       setExtractedData(data)
       setCurrentStep('extraction')
     },
@@ -688,11 +826,86 @@ const NewEmergencyPage = () => {
 
                 {/* Pulsante estrazione - responsive */}
                 <div className="text-center">
+                  {/* CSS personalizzato per lo switch */}
+                  <style>{extractionSwitchStyles}</style>
+                  
+                  {/* Selezione metodo di estrazione - Switch compatto personalizzato */}
+                  <div className="mb-4">
+                    <div className="extraction-method-switch">
+                      <span className={`extraction-method-label ${selectedExtractionMethod === 'llm' ? 'active text-primary' : 'text-muted'}`}>
+                        <i className="bi bi-cloud me-1"></i>
+                        LLM
+                        {extractionMethods.llm && !extractionMethods.llm.available && (
+                          <i className="bi bi-x-circle ms-1 text-danger" title="Non disponibile"></i>
+                        )}
+                      </span>
+                      
+                      {/* Toggle Switch Personalizzato */}
+                      <label className="extraction-switch-toggle">
+                        <input
+                          type="checkbox"
+                          checked={selectedExtractionMethod === 'ner'}
+                          onChange={(e) => {
+                            const newMethod = e.target.checked ? 'ner' : 'llm'
+                            // Controlla se il metodo è disponibile prima di cambiare
+                            if (extractionMethods[newMethod]?.available) {
+                              setSelectedExtractionMethod(newMethod)
+                            }
+                          }}
+                          disabled={
+                            (!extractionMethods.llm?.available && !extractionMethods.ner?.available) ||
+                            (selectedExtractionMethod === 'llm' && !extractionMethods.ner?.available) ||
+                            (selectedExtractionMethod === 'ner' && !extractionMethods.llm?.available)
+                          }
+                        />
+                        <span className="extraction-switch-slider"></span>
+                      </label>
+                      
+                      <span className={`extraction-method-label ${selectedExtractionMethod === 'ner' ? 'active text-success' : 'text-muted'}`}>
+                        <i className="bi bi-cpu me-1"></i>
+                        NER
+                        {extractionMethods.ner && !extractionMethods.ner.available && (
+                          <i className="bi bi-x-circle ms-1 text-danger" title="Non disponibile"></i>
+                        )}
+                      </span>
+                    </div>
+                    
+                    {/* Info metodo selezionato */}
+                    <div className="text-center mt-3">
+                      {selectedExtractionMethod && extractionMethods[selectedExtractionMethod] && (
+                        <div className="mb-2">
+                          <div className={`badge ${selectedExtractionMethod === 'llm' ? 'bg-primary' : 'bg-success'} fs-6 px-3 py-2`}>
+                            <i className={`bi ${selectedExtractionMethod === 'llm' ? 'bi-cloud' : 'bi-cpu'} me-2`}></i>
+                            {extractionMethods[selectedExtractionMethod].name}
+                            {!extractionMethods[selectedExtractionMethod].available && (
+                              <span className="ms-2">
+                                <i className="bi bi-exclamation-triangle"></i> Non disponibile
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Descrizione metodo */}
+                          <div className="text-muted small mt-2">
+                            {extractionMethods[selectedExtractionMethod].description}
+                          </div>
+                          
+                          {/* Avviso se solo un metodo è disponibile */}
+                          {Object.values(extractionMethods).filter(m => m.available).length === 1 && (
+                            <div className="alert alert-warning mt-2 p-2 small">
+                              <i className="bi bi-info-circle me-1"></i>
+                              Solo questo metodo è attualmente disponibile
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="d-grid gap-2 d-md-flex justify-content-md-center">
                     <button 
                       className="btn btn-success btn-lg px-4 py-3 fs-5 fw-bold shadow emergency-btn"
                       onClick={handleGenerateLLMExtraction}
-                      disabled={extractDataMutation.isPending}
+                      disabled={extractDataMutation.isPending || !selectedExtractionMethod || !extractionMethods[selectedExtractionMethod]?.available}
                     >
                       {extractDataMutation.isPending ? (
                         <>
@@ -703,7 +916,9 @@ const NewEmergencyPage = () => {
                       ) : (
                         <>
                           <i className="bi bi-cpu me-2"></i>
-                          <span className="d-none d-sm-inline">ESTRAI DATI CLINICI</span>
+                          <span className="d-none d-sm-inline">
+                            ESTRAI DATI CLINICI ({selectedExtractionMethod?.toUpperCase()})
+                          </span>
                           <span className="d-sm-none">ESTRAI DATI</span>
                         </>
                       )}
@@ -735,6 +950,27 @@ const NewEmergencyPage = () => {
                       <h5 className="alert-heading">
                         Risultati Estrazione AI
                       </h5>
+                      
+                      {/* Informazioni sul metodo di estrazione */}
+                      {extractionInfo && (
+                        <div className="mb-3">
+                          <strong>Metodo utilizzato:</strong>{' '}
+                          <span className="badge bg-primary me-2">
+                            {extractionInfo.method?.toUpperCase() || selectedExtractionMethod?.toUpperCase()}
+                          </span>
+                          {extractionInfo.model && (
+                            <small className="text-muted">
+                              Modello: {extractionInfo.model}
+                            </small>
+                          )}
+                          {extractionInfo.entities_found !== undefined && (
+                            <small className="text-muted ms-2">
+                              | Entità trovate: {extractionInfo.entities_found}
+                            </small>
+                          )}
+                        </div>
+                      )}
+                      
                       {extractedData.validation_errors && extractedData.validation_errors.length > 0 && (
                         <div className="mt-2">
                           <strong>Avvisi di validazione:</strong>
@@ -750,6 +986,16 @@ const NewEmergencyPage = () => {
                           <i className="bi bi-exclamation-triangle me-1"></i>
                           <strong>Modalità fallback attivata:</strong> {extractedData.llm_warnings?.join(', ')}
                         </p>
+                      )}
+                      {extractedData.warnings && extractedData.warnings.length > 0 && (
+                        <div className="mt-2">
+                          <strong>Avvisi:</strong>
+                          <ul className="mb-0">
+                            {extractedData.warnings.map((warning, index) => (
+                              <li key={index} className="text-warning">{warning}</li>
+                            ))}
+                          </ul>
+                        </div>
                       )}
                       <p className="mb-0 text-muted">
                         <i className="bi bi-lightbulb me-1"></i>
@@ -919,8 +1165,8 @@ const NewEmergencyPage = () => {
                             <input
                               type="text"
                               className="form-control"
-                              value={extractedData.extracted_data.oxygen_saturation || ''}
-                              onChange={(e) => handleExtractedDataChange('oxygen_saturation', e.target.value)}
+                              value={extractedData.extracted_data.oxygenation || ''}
+                              onChange={(e) => handleExtractedDataChange('oxygenation', e.target.value)}
                               placeholder="%"
                             />
                           </div>
@@ -950,8 +1196,8 @@ const NewEmergencyPage = () => {
                             <textarea
                               className="form-control"
                               rows="3"
-                              value={extractedData.extracted_data.diagnosis || ''}
-                              onChange={(e) => handleExtractedDataChange('diagnosis', e.target.value)}
+                              value={extractedData.extracted_data.assessment || ''}
+                              onChange={(e) => handleExtractedDataChange('assessment', e.target.value)}
                             />
                           </div>
                           <div className="col-md-6">

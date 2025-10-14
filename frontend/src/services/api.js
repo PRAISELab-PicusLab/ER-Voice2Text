@@ -518,10 +518,21 @@ export const medicalWorkflowAPI = {
     return response.data
   },
 
-  // Estrai dati clinici da transcript
-  extractClinicalData: async (transcriptId, editedTranscript = null) => {
-    const payload = editedTranscript ? { transcript_text: editedTranscript } : {}
+  // Estrai dati clinici da transcript con selezione metodo
+  extractClinicalData: async (transcriptId, editedTranscript = null, extractionMethod = 'llm') => {
+    const payload = {}
+    if (editedTranscript) {
+      payload.transcript_text = editedTranscript
+    }
+    payload.extraction_method = extractionMethod
+    
     const response = await apiClient.post(`/api/transcripts/${transcriptId}/extract_clinical_data/`, payload)
+    return response.data
+  },
+
+  // Ottieni metodi di estrazione disponibili
+  getExtractionMethods: async () => {
+    const response = await apiClient.get('/api/extraction/methods/')
     return response.data
   },
 

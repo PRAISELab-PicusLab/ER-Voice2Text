@@ -194,7 +194,7 @@ class PDFReportService:
             # Parametri vitali come tabella
             if title == "PARAMETRI VITALI":
                 table_data = [
-                    ["SpO₂", "FC (bpm)", "Temp (°C)", "Glic (mg/dl)", "PA (mmHg)"],
+                    ["SpO2", "FC (bpm)", "Temp (°C)", "Glic (mg/dl)", "PA (mmHg)"],
                     [
                         data.get("oxygenation", ""),
                         data.get("heart_rate", ""),

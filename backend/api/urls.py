@@ -19,7 +19,8 @@ from .medical_workflow_views import (
     intervention_details,
     resume_intervention,
     delete_intervention,
-    calculate_codice_fiscale
+    calculate_codice_fiscale,
+    get_extraction_methods
 )
 
 router = DefaultRouter()
@@ -47,4 +48,5 @@ urlpatterns = [
     path('interventions/<str:transcript_id>/resume/', resume_intervention, name='resume-intervention'),
     path('interventions/<str:transcript_id>/delete/', delete_intervention, name='delete-intervention'),
     path('utils/calculate-codice-fiscale/', calculate_codice_fiscale, name='calculate-codice-fiscale'),
+    path('extraction/methods/', get_extraction_methods, name='get-extraction-methods'),
 ]

@@ -346,7 +346,7 @@ class MongoDBService:
     
     def get_visits_today(self) -> int:
         """
-        Conta le visite di oggi
+        Conta TUTTE le emergenze di oggi (create oggi, sia completate che in corso)
         """
         if not self.connected:
             return 0
@@ -355,6 +355,7 @@ class MongoDBService:
             today_start = datetime.combine(date.today(), datetime.min.time())
             today_end = datetime.combine(date.today(), datetime.max.time())
             
+            # Conta TUTTE le visite create oggi
             count = AudioTranscript.objects(
                 created_at__gte=today_start,
                 created_at__lte=today_end
@@ -363,7 +364,7 @@ class MongoDBService:
             return count
             
         except Exception as e:
-            logger.error(f"Errore conteggio visite oggi: {e}")
+            logger.error(f"Errore conteggio emergenze oggi: {e}")
             return 0
     
     def get_waiting_patients_count(self) -> int:
@@ -386,25 +387,21 @@ class MongoDBService:
     
     def get_completed_visits_today(self) -> int:
         """
-        Conta le visite completate oggi (con status 'extracted' o 'validated')
+        Conta TUTTE le visite completate (con status 'extracted' o 'validated')
         """
         if not self.connected:
             return 0
-        
+
         try:
-            today_start = datetime.combine(date.today(), datetime.min.time())
-            today_end = datetime.combine(date.today(), datetime.max.time())
-            
+            # Conta TUTTE le visite completate, non solo quelle di oggi
             count = AudioTranscript.objects(
-                created_at__gte=today_start,
-                created_at__lte=today_end,
                 processing_status__in=['extracted', 'validated']
             ).count()
-            
+
             return count
-            
+
         except Exception as e:
-            logger.error(f"Errore conteggio visite completate oggi: {e}")
+            logger.error(f"Errore conteggio visite completate: {e}")
             return 0
     
     def get_unique_patients(self) -> List[Dict[str, Any]]:

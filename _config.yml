@@ -1,0 +1,26 @@
+# GitHub Pages configuration
+# This file helps GitHub understand how to build and serve the documentation
+
+include:
+  - docs/
+  - .nojekyll
+
+exclude:
+  - backend/
+  - frontend/
+  - "*.pyc"
+  - __pycache__/
+  - .env
+  - "*.sqlite3"
+
+# Enable GitHub Pages to serve Sphinx documentation
+plugins:
+  - jekyll-optional-front-matter
+  - jekyll-readme-index
+
+# Markdown processing
+markdown: kramdown
+highlighter: rouge
+
+# Repository information for documentation links
+repository: PRAISELab-PicusLab/ER-Voice2Text

@@ -2,6 +2,18 @@
 
 Sistema unificato per la gestione di cartelle cliniche nel Pronto Soccorso con trascrizione automatica vocale e intelligence artificiale.
 
+## 📚 Documentazione
+
+**📖 [Documentazione completa disponibile qui](https://praiselab-picuslab.github.io/ER-Voice2Text/)**
+
+La documentazione include:
+- API Reference completa
+- Guida per sviluppatori
+- Architettura del sistema
+- Esempi di utilizzo
+
+---
+
 ## 🏥 Caratteristiche
 
 - **Autenticazione sicura** per medici del Pronto Soccorso

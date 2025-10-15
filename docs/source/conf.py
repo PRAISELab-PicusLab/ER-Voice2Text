@@ -1,25 +1,40 @@
 # Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 import os
 import sys
-import django
 
 # Add the backend directory to Python path
 sys.path.insert(0, os.path.abspath('../../backend'))
 
-# Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'medical_system.settings')
+# Mock Django setup for documentation
+import django
+from django.conf import settings
+
+if not settings.configured:
+    settings.configure(
+        DEBUG=False,
+        SECRET_KEY='dummy-secret-key-for-docs',
+        INSTALLED_APPS=[
+            'django.contrib.auth',
+            'django.contrib.contenttypes',
+            'core',
+            'api',
+        ],
+        DATABASES={
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': ':memory:',
+            }
+        },
+        USE_TZ=True,
+    )
+
 try:
     django.setup()
 except Exception as e:
     print(f"Warning: Django setup failed: {e}")
 
+# -- Project information -----------------------------------------------------
 project = 'ER-Voice2Text'
 copyright = '2025, PRAISELab-PicusLab'
 author = 'PRAISELab-PicusLab'
@@ -27,16 +42,11 @@ release = '1.0.0'
 version = '1.0'
 
 # -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
-    'sphinx.ext.coverage',
-    'sphinx_autodoc_typehints',
 ]
 
 templates_path = ['_templates']
@@ -51,31 +61,28 @@ autodoc_default_options = {
     'exclude-members': '__weakref__'
 }
 
+autodoc_mock_imports = [
+    'mongoengine',
+    'openai',
+    'transformers',
+    'torch',
+    'librosa',
+    'whisper',
+    'numpy',
+    'PIL',
+    'reportlab',
+]
+
 # Napoleon settings
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = False
-napoleon_use_admonition_for_notes = False
-napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = True
-napoleon_preprocess_types = False
-napoleon_type_aliases = None
-napoleon_attr_annotations = True
-
-# Intersphinx mapping
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None),
-    'django': ('https://docs.djangoproject.com/en/stable/', 'https://docs.djangoproject.com/en/stable/_objects/'),
-}
 
 # -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
@@ -84,8 +91,6 @@ html_theme_options = {
     'logo_only': False,
     'display_version': True,
     'prev_next_buttons_location': 'bottom',
-    'style_external_links': False,
-    'vcs_pageview_mode': '',
     'collapse_navigation': True,
     'sticky_navigation': True,
     'navigation_depth': 4,
@@ -102,3 +107,6 @@ html_context = {
 }
 
 html_title = f"{project} v{release}"
+
+# Suppress warnings for mock imports
+suppress_warnings = ['autodoc.import_error']

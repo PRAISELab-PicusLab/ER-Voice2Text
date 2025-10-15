@@ -1,6 +1,5 @@
 """
-Servizio MongoDB per gestione dati pazienti e visite
-Basato sulla logica del Project 2
+Service for MongoDB management of patient and visit data
 """
 
 import os
@@ -24,35 +23,36 @@ logger = logging.getLogger(__name__)
 
 class MongoDBService:
     """
-    Servizio per gestione dati MongoDB
+    Service for MongoDB management of patient and visit data
     """
     
     def __init__(self):
+        """Initialize MongoDB connection"""
         self.connected = False
         self._connect()
     
     def _connect(self):
-        """Connessione a MongoDB"""
+        """Connect to MongoDB"""
         try:
             mongodb_uri = getattr(settings, 'MONGODB_URL', None)
             if not mongodb_uri:
-                logger.error("MONGODB_URL non configurata nelle Django settings")
+                logger.error("MONGODB_URL not configured in Django settings")
                 return
             
-            # Disconnetti connessioni esistenti
+            # Disconnect existing connections
             disconnect()
-            
-            # Connetti a MongoDB
+
+            # Connect to MongoDB
             connect(host=mongodb_uri, alias='default')
             self.connected = True
-            logger.info(f"Connessione MongoDB stabilita: {mongodb_uri}")
-            
+            logger.info(f"MongoDB connection established: {mongodb_uri}")
+
         except Exception as e:
-            logger.error(f"Errore connessione MongoDB: {e}")
+            logger.error(f"Error connecting to MongoDB: {e}")
             self.connected = False
     
     def is_connected(self) -> bool:
-        """Verifica connessione MongoDB"""
+        """Check MongoDB connection status"""
         return self.connected
     
     def save_patient_visit_transcript_only(self, encounter_id: str, patient_id: str, doctor_id: str, 
@@ -60,20 +60,26 @@ class MongoDBService:
                                           triage_code: str = None, symptoms: str = None, 
                                           triage_notes: str = None) -> Optional[str]:
         """
-        Salva una nuova visita paziente con SOLO trascrizione (senza dati clinici estratti)
-        
-        Args:
-            encounter_id: ID encounter Django
-            patient_id: ID paziente Django
-            doctor_id: ID medico Django
-            audio_file_path: Path file audio
-            transcript_text: Testo trascrizione
-            triage_code: Codice triage (white, green, yellow, red, black)
-            symptoms: Sintomi principali
-            triage_notes: Note del triage
-            
-        Returns:
-            ID del transcript MongoDB creato
+        Save a new patient visit with ONLY transcript (without extracted clinical data)
+
+        :param str encounter_id: ID encounter Django
+        :type encounter_id: str
+        :param str patient_id: ID paziente Django
+        :type patient_id: str
+        :param str doctor_id: ID medico Django
+        :type doctor_id: str
+        :param str audio_file_path: Path file audio
+        :type audio_file_path: str
+        :param str transcript_text: Testo trascrizione
+        :type transcript_text: str
+        :param str triage_code: Codice triage (white, green, yellow, red)
+        :type triage_code: str
+        :param str symptoms: Sintomi principali
+        :type symptoms: str
+        :param str triage_notes: Note del triage
+        :type triage_notes: str
+        :returns: ID del transcript MongoDB creato
+        :rtype: Optional[str]
         """
         if not self.connected:
             logger.error("MongoDB non connesso")
@@ -121,18 +127,22 @@ class MongoDBService:
                           audio_file_path: str, transcript_text: str, 
                           clinical_data: Dict[str, Any]) -> Optional[str]:
         """
-        Salva una nuova visita paziente con audio e dati clinici
-        
-        Args:
-            encounter_id: ID encounter Django
-            patient_id: ID paziente Django
-            doctor_id: ID medico Django
-            audio_file_path: Path file audio
-            transcript_text: Testo trascrizione
-            clinical_data: Dati clinici estratti
-            
-        Returns:
-            ID del transcript MongoDB creato
+        Save a new patient visit with audio and clinical data
+
+        :param str encounter_id: ID encounter Django
+        :type encounter_id: str
+        :param str patient_id: ID paziente Django
+        :type patient_id: str
+        :param str doctor_id: ID medico Django
+        :type doctor_id: str
+        :param str audio_file_path: Path file audio
+        :type audio_file_path: str
+        :param str transcript_text: Testo trascrizione
+        :type transcript_text: str
+        :param Dict[str, Any] clinical_data: Dati clinici estratti
+        :type clinical_data: Dict[str, Any]
+        :returns: ID del transcript MongoDB creato
+        :rtype: Optional[str]
         """
         if not self.connected:
             logger.error("MongoDB non connesso")
@@ -233,13 +243,12 @@ class MongoDBService:
     
     def get_patient_visits(self, patient_id: str) -> List[Dict[str, Any]]:
         """
-        Recupera tutte le visite di un paziente
-        
-        Args:
-            patient_id: ID paziente Django
-            
-        Returns:
-            Lista delle visite del paziente
+        Retrieve all visits of a patient
+
+        :param str patient_id: ID paziente Django
+        :type patient_id: str
+        :returns: Lista delle visite del paziente
+        :rtype: List[Dict[str, Any]]
         """
         if not self.connected:
             return []
@@ -276,10 +285,10 @@ class MongoDBService:
     
     def get_all_patients_summary(self) -> List[Dict[str, Any]]:
         """
-        Recupera summary di tutti i pazienti con le loro ultime visite
-        
-        Returns:
-            Lista di pazienti con dati aggregati
+        Retrieve the summary of all patients with their latest visits
+
+        :returns: List of patients with aggregated data
+        :rtype: List[Dict[str, Any]]
         """
         if not self.connected:
             return []
@@ -346,7 +355,10 @@ class MongoDBService:
     
     def get_visits_today(self) -> int:
         """
-        Conta TUTTE le emergenze di oggi (create oggi, sia completate che in corso)
+        Count ALL visits today (created today, both completed and in progress)
+
+        :returns: Number of visits created today
+        :rtype: int
         """
         if not self.connected:
             return 0
@@ -369,7 +381,10 @@ class MongoDBService:
     
     def get_waiting_patients_count(self) -> int:
         """
-        Conta pazienti in attesa (visite non completate)
+        Count patients waiting for processing (visits not yet completed)
+        
+        :returns: Number of patients waiting for processing
+        :rtype: int
         """
         if not self.connected:
             return 0
@@ -387,7 +402,10 @@ class MongoDBService:
     
     def get_completed_visits_today(self) -> int:
         """
-        Conta TUTTE le visite completate (con status 'extracted' o 'validated')
+        Count ALL completed visits (with status 'extracted' or 'validated')
+        
+        :returns: Number of completed visits
+        :rtype: int
         """
         if not self.connected:
             return 0
@@ -406,7 +424,10 @@ class MongoDBService:
     
     def get_unique_patients(self) -> List[Dict[str, Any]]:
         """
-        Recupera lista di pazienti unici raggruppati per codice fiscale da tutti gli interventi
+        Retrieve a list of unique patients grouped by fiscal code from all interventions
+
+        :returns: List of unique patients with aggregated data
+        :rtype: List[Dict[str, Any]]
         """
         if not self.connected:
             return []
@@ -491,14 +512,14 @@ class MongoDBService:
     
     def update_patient_data(self, patient_id: str, updated_data: Dict[str, Any]) -> bool:
         """
-        Aggiorna i dati anagrafici di un paziente nell'ultima visita
-        
-        Args:
-            patient_id: ID paziente Django
-            updated_data: Dati aggiornati
-            
-        Returns:
-            True se aggiornamento riuscito
+        Update the personal data of a patient in the latest visit
+
+        :param patient_id: Django patient ID
+        :type patient_id: str
+        :param updated_data: Updated data fields
+        :type updated_data: Dict[str, Any]
+        :returns: True if update succeeded, False otherwise
+        :rtype: bool
         """
         if not self.connected:
             return False
@@ -537,13 +558,12 @@ class MongoDBService:
     
     def generate_report_content(self, transcript_id: str) -> Optional[Dict[str, Any]]:
         """
-        Genera il contenuto per il report PDF
-        
-        Args:
-            transcript_id: ID transcript MongoDB
-            
-        Returns:
-            Dizionario con contenuto strutturato per PDF
+        Generate the content for the PDF report
+
+        :param transcript_id: ID transcript MongoDB
+        :type transcript_id: str
+        :returns: Dictionary with structured content for PDF
+        :rtype: Optional[Dict[str, Any]]
         """
         if not self.connected:
             return None
@@ -611,7 +631,14 @@ class MongoDBService:
     
     def update_transcript_text(self, transcript_id: str, new_text: str) -> bool:
         """
-        Aggiorna il testo della trascrizione
+        Update the transcript text
+        
+        :param transcript_id: ID transcript MongoDB
+        :type transcript_id: str
+        :param new_text: New transcript text
+        :type new_text: str
+        :returns: True if update succeeded, False otherwise
+        :rtype: bool
         """
         try:
             transcript = AudioTranscript.objects(transcript_id=transcript_id).first()
@@ -629,7 +656,14 @@ class MongoDBService:
     
     def update_clinical_data(self, transcript_id: str, clinical_dict: Dict[str, Any]) -> bool:
         """
-        Aggiorna i dati clinici associati al transcript
+        Update the clinical data associated with the transcript
+        
+        :param transcript_id: ID transcript MongoDB
+        :type transcript_id: str
+        :param clinical_dict: Dictionary with clinical data fields to update
+        :type clinical_dict: Dict[str, Any]
+        :returns: True if update succeeded, False otherwise
+        :rtype: bool
         """
         try:
             transcript = AudioTranscript.objects(transcript_id=transcript_id).first()
@@ -744,10 +778,10 @@ class MongoDBService:
     
     def get_all_visits_summary(self) -> List[Dict[str, Any]]:
         """
-        Recupera una lista riassuntiva di tutte le visite/interventi
-        
-        Returns:
-            Lista di dizionari con informazioni riassuntive
+        Retrieve a summary list of all visits/interventions
+
+        :returns: List of dictionaries with summary information
+        :rtype: List[Dict[str, Any]]
         """
         if not self.connected:
             return []
@@ -804,13 +838,12 @@ class MongoDBService:
     
     def get_visit_data(self, transcript_id: str) -> Optional[Dict[str, Any]]:
         """
-        Recupera i dati completi di una visita/transcript
-        
-        Args:
-            transcript_id: ID del transcript
-            
-        Returns:
-            Dizionario con i dati della visita o None se non trovato
+        Retrieve the complete data of a visit/transcript
+
+        :param transcript_id: ID of the transcript
+        :type transcript_id: str
+        :returns: Dictionary with visit data or None if not found
+        :rtype: Optional[Dict[str, Any]]
         """
         if not self.connected:
             return None
@@ -897,13 +930,12 @@ class MongoDBService:
 
     def delete_visit(self, transcript_id: str) -> bool:
         """
-        Elimina una visita da MongoDB
-        
-        Args:
-            transcript_id: ID del transcript da eliminare
-            
-        Returns:
-            True se eliminazione riuscita, False altrimenti
+        Delete a visit from MongoDB
+
+        :param transcript_id: ID of the transcript to delete
+        :type transcript_id: str
+        :returns: True if deletion was successful, False otherwise
+        :rtype: bool
         """
         if not self.connected:
             return False

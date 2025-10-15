@@ -15,7 +15,6 @@ import EncounterDetail from '@components/Encounter/EncounterDetail'
 import AudioRecording from '@components/Audio/AudioRecording'
 import ClinicalEditor from '@components/Clinical/ClinicalEditor'
 import ReportPreview from '@components/Report/ReportPreview'
-import TestMedicalWorkflow from '@components/TestMedicalWorkflow'
 import NewEmergencyPage from '@components/Emergency/NewEmergencyPage'
 
 // Hooks
@@ -53,7 +52,6 @@ function App() {
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/encounter/new" element={<NewEmergencyPage />} />
-                <Route path="/test-workflow" element={<TestMedicalWorkflow />} />
                 <Route path="/encounter/:id" element={<EncounterDetail />} />
                 <Route path="/encounter/:id/audio" element={<AudioRecording />} />
                 <Route path="/encounter/:id/clinical" element={<ClinicalEditor />} />

@@ -1,5 +1,5 @@
 """
-Django settings for unified medical system - Simplified
+Django settings for application
 """
 
 import os
@@ -138,7 +138,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = True  # Per debug - rimuovere in produzione
+CORS_ALLOW_ALL_ORIGINS = True  # ATTENZIONE: Da disabilitare in produzione per sicurezza
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',
@@ -170,11 +170,14 @@ MONGODB_SETTINGS = {
 MONGODB_URL = env('MONGODB_URL', default='mongodb://localhost:27017/medical_system')
 
 # Inizializza MongoDB connection al startup
+import logging
+logger = logging.getLogger(__name__)
+
 try:
     mongoengine.connect(**MONGODB_SETTINGS)
-    print(f"MongoDB connected to: {MONGODB_SETTINGS['host']}")
+    logger.info(f"MongoDB connected to: {MONGODB_SETTINGS['host']}")
 except Exception as e:
-    print(f"Warning: MongoDB connection failed: {e}")
+    logger.warning(f"MongoDB connection failed: {e}")
 
 # Medical AI Services Configuration
 NVIDIA_NIM_CONFIG = {

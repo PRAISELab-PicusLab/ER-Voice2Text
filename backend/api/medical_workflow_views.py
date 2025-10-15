@@ -1,6 +1,6 @@
 """
-View API aggiuntive per il workflow medico completo
-Gestisce la pipeline di trascrizione, estrazione entità e generazione report
+Additional View API for the complete medical workflow
+Manages the transcription pipeline, entity extraction, and report generation
 """
 
 from rest_framework import status
@@ -29,7 +29,14 @@ logger = logging.getLogger(__name__)
 
 
 def _safe_parse_date(raw_date: Any) -> Optional[date]:
-    """Parsa una data da stringa restituendo None se non valida."""
+    """
+    Parses a date from string with support for multiple formats.
+
+    :param raw_date: Date in string format or other type to convert
+    :type raw_date: Any
+    :returns: Parsed date object or None if parsing failed
+    :rtype: Optional[date]
+    """
     if not raw_date:
         return None
 
@@ -51,7 +58,14 @@ def _safe_parse_date(raw_date: Any) -> Optional[date]:
 
 
 def _create_patient_from_extracted_data(extracted: Dict[str, Any]) -> Tuple[Patient, bool]:
-    """Crea un nuovo paziente partendo dai dati estratti dalla visita."""
+    """
+    Creates a new patient from the data extracted from the medical transcription.
+
+    :param extracted: Dictionary containing the data extracted from the visit
+    :type extracted: Dict[str, Any]
+    :returns: Tuple containing the created patient and success flag
+    :rtype: Tuple[Patient, bool]
+    """
     timestamp_suffix = datetime.now().strftime('%Y%m%d%H%M%S')
     first_name = (extracted.get('first_name') or 'Paziente').strip() or 'Paziente'
     last_name = (extracted.get('last_name') or f'Anonimo {timestamp_suffix}').strip() or f'Anonimo {timestamp_suffix}'
@@ -86,7 +100,15 @@ def _create_patient_from_extracted_data(extracted: Dict[str, Any]) -> Tuple[Pati
 @permission_classes([AllowAny])
 def dashboard_analytics(request):
     """
-    Endpoint per statistiche dashboard
+    Endpoint for retrieving dashboard statistics.
+
+    Provides aggregated data on patients, visits, and transcriptions
+    for display in the medical dashboard.
+
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :returns: Response containing dashboard statistics
+    :rtype: Response
     """
     try:
         # Statistiche MongoDB
@@ -137,7 +159,12 @@ def dashboard_analytics(request):
 @permission_classes([AllowAny])
 def patients_list(request):
     """
-    Endpoint per lista pazienti con filtri
+    Endpoint for patient list with filters
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :returns: Response containing filtered patient list
+    :rtype: Response
     """
     try:
         filter_type = request.GET.get('filter', 'all')  # all, waiting, completed
@@ -175,9 +202,14 @@ def patients_list(request):
 @parser_classes([MultiPartParser, FormParser])
 def process_audio_visit(request):
     """
-    Endpoint per processare una nuova visita audio
-    Pipeline: trascrizione -> salvataggio MongoDB (senza estrazione automatica)
-    L'estrazione verrà fatta separatamente quando l'utente preme il bottone
+    Endpoint for processing a new audio visit
+    Pipeline: transcription -> saving to MongoDB (without automatic extraction)
+    Extraction will be done separately when the user presses the button
+    
+    :param request: HTTP request object with audio file and metadata
+    :type request: HttpRequest
+    :returns: Response with transcription and patient info
+    :rtype: Response
     """
     temp_audio_path: Optional[str] = None
 
@@ -228,10 +260,7 @@ def process_audio_visit(request):
 
         transcript_text = transcript_result.get('transcript', '')
         logger.info(f"Trascrizione completata: {len(transcript_text)} caratteri")
-        print(f"\n=== TRASCRIZIONE WHISPER ===")
-        print(f"Testo: {transcript_text}")
-        print(f"Lunghezza: {len(transcript_text)} caratteri")
-        print(f"================================\n")
+        logger.debug(f"Testo trascritto: {transcript_text[:100]}...")
 
         # Crea paziente temporaneo se necessario
         if not patient:
@@ -339,7 +368,14 @@ def process_audio_visit(request):
 @permission_classes([AllowAny])
 def patient_visit_history(request, patient_id):
     """
-    Endpoint per cronologia visite di un paziente
+    Endpoint for patient visit history
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param patient_id: ID of the patient to retrieve history for
+    :type patient_id: str
+    :returns: Response containing patient's visit history
+    :rtype: Response
     """
     try:
         visits = mongodb_service.get_patient_visits(patient_id)
@@ -363,7 +399,14 @@ def patient_visit_history(request, patient_id):
 @parser_classes([JSONParser])
 def update_patient_data(request, patient_id):
     """
-    Endpoint per aggiornare dati anagrafia paziente
+    Endpoint for updating patient demographic data
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param patient_id: ID of the patient to update
+    :type patient_id: str
+    :returns: Response for patient data update status
+    :rtype: Response
     """
     try:
         updated_data = request.data
@@ -416,7 +459,14 @@ def update_patient_data(request, patient_id):
 @permission_classes([AllowAny])
 def generate_pdf_report(request, transcript_id):
     """
-    Endpoint per generare report PDF da transcript MongoDB
+    Endpoint for generating PDF report from MongoDB transcript
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param transcript_id: ID of the transcript to generate PDF for
+    :type transcript_id: str
+    :returns: Response containing PDF generation status and path
+    :rtype: Response
     """
     try:
         logger.info(f"Generazione PDF richiesta per transcript_id: {transcript_id}")
@@ -490,7 +540,14 @@ def generate_pdf_report(request, transcript_id):
 @permission_classes([AllowAny])
 def download_pdf_report(request, transcript_id):
     """
-    Endpoint per download diretto del report PDF
+    Endpoint for direct download of the PDF report
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param transcript_id: ID of the transcript to download PDF for
+    :type transcript_id: str
+    :returns: FileResponse for downloading the PDF
+    :rtype: FileResponse
     """
     try:
         logger.info(f"Download PDF richiesto per transcript_id: {transcript_id}")
@@ -560,7 +617,14 @@ def download_pdf_report(request, transcript_id):
 @permission_classes([AllowAny])
 def transcript_details(request, transcript_id):
     """
-    Endpoint per dettagli completi di un transcript
+    Endpoint for retrieving complete details of a transcript
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param transcript_id: ID of the transcript to retrieve details for
+    :type transcript_id: str
+    :returns: Response containing transcript details
+    :rtype: Response
     """
     try:
         # Recupera da MongoDB
@@ -592,7 +656,12 @@ def transcript_details(request, transcript_id):
 @permission_classes([AllowAny])
 def get_extraction_methods(request):
     """
-    Endpoint per ottenere i metodi di estrazione disponibili
+    Endpoint for retrieving available extraction methods
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :returns: Response containing available extraction methods
+    :rtype: Response
     """
     try:
         from services.clinical_extraction import clinical_extraction_service
@@ -617,8 +686,15 @@ def get_extraction_methods(request):
 @permission_classes([AllowAny])
 def extract_clinical_data_llm(request, transcript_id):
     """
-    Endpoint per estrazione dati clinici con supporto per LLM e NER
-    Supporta la selezione del metodo di estrazione tramite parametro 'extraction_method'
+    Endpoint for extracting clinical data with support for LLM and NER
+    Supports selecting the extraction method via the 'extraction_method' parameter
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param transcript_id: ID of the transcript to extract data from
+    :type transcript_id: str
+    :returns: Response containing extracted clinical data and status
+    :rtype: Response
     """
     try:
         # Recupera i dati da MongoDB
@@ -713,7 +789,14 @@ def extract_clinical_data_llm(request, transcript_id):
 @permission_classes([AllowAny])
 def update_clinical_data(request, transcript_id):
     """
-    Endpoint per aggiornare i dati clinici estratti modificati dall'utente
+    Endpoint for updating extracted clinical data modified by the user
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param transcript_id: ID of the transcript to update clinical data for
+    :type transcript_id: str
+    :returns: Response for clinical data update status
+    :rtype: Response
     """
     try:
         logger.info(f"Richiesta aggiornamento dati clinici per transcript: {transcript_id}")
@@ -768,7 +851,12 @@ def update_clinical_data(request, transcript_id):
 @permission_classes([AllowAny])
 def all_interventions_list(request):
     """
-    Endpoint per ottenere lista di tutti gli interventi/visite da MongoDB
+    Endpoint for obtaining a list of all interventions/visits from MongoDB
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :returns: Response containing list of interventions
+    :rtype: Response
     """
     try:
         # Recupera tutti i transcript da MongoDB
@@ -791,7 +879,14 @@ def all_interventions_list(request):
 @permission_classes([AllowAny])
 def intervention_details(request, transcript_id):
     """
-    Endpoint per ottenere dettagli completi di un intervento
+    Endpoint for obtaining complete details of an intervention
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param transcript_id: ID of the transcript to retrieve details for
+    :type transcript_id: str
+    :returns: Response containing intervention details
+    :rtype: Response
     """
     try:
         logger.info(f"Richiesta dettagli per intervento: {transcript_id}")
@@ -908,8 +1003,15 @@ def intervention_details(request, transcript_id):
 @permission_classes([AllowAny])
 def resume_intervention(request, transcript_id):
     """
-    Endpoint per riprendere un intervento incompleto
-    Restituisce i dati necessari per riprendere il workflow
+    Endpoint for resuming an incomplete intervention/workflow
+    Returns the necessary data to resume the workflow
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param transcript_id: ID of the transcript to resume
+    :type transcript_id: str
+    :returns: Response containing data to resume the intervention
+    :rtype: Response
     """
     try:
         logger.info(f"Richiesta ripresa intervento: {transcript_id}")
@@ -967,7 +1069,14 @@ def resume_intervention(request, transcript_id):
 @permission_classes([AllowAny])
 def delete_intervention(request, transcript_id):
     """
-    Endpoint per eliminare un intervento/visita
+    Endpoint for deleting an intervention/visit
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :param transcript_id: ID of the transcript to delete
+    :type transcript_id: str
+    :returns: Response for deletion status
+    :rtype: Response
     """
     try:
         logger.info(f"Richiesta eliminazione intervento: {transcript_id}")
@@ -998,7 +1107,12 @@ def delete_intervention(request, transcript_id):
 @parser_classes([JSONParser])
 def calculate_codice_fiscale(request):
     """
-    Endpoint per calcolare automaticamente il codice fiscale
+    Endpoint for automatically calculating the fiscal code
+    
+    :param request: HTTP request object
+    :type request: HttpRequest
+    :returns: Response containing the calculated fiscal code or error message
+    :rtype: Response
     """
     try:
         from codicefiscale import codicefiscale

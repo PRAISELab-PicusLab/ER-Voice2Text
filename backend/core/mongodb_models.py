@@ -10,7 +10,24 @@ import uuid
 
 class AudioSegment(EmbeddedDocument):
     """
-    Segmento audio con timestamp e metadati
+    Rappresenta un segmento audio con timestamp e metadati per la trascrizione.
+    
+    Utilizzato per tracciare frammenti audio specifici all'interno
+    di una registrazione più lunga, consentendo l'analisi e la trascrizione
+    segmentata del contenuto audio.
+    
+    :ivar segment_id: Identificatore univoco del segmento
+    :type segment_id: str
+    :ivar start_ms: Timestamp di inizio in millisecondi
+    :type start_ms: int
+    :ivar end_ms: Timestamp di fine in millisecondi  
+    :type end_ms: int
+    :ivar duration_ms: Durata del segmento in millisecondi
+    :type duration_ms: int
+    :ivar file_path: Percorso del file audio segmentato
+    :type file_path: str
+    :ivar chunk_index: Indice del chunk nel flusso audio
+    :type chunk_index: int
     """
     segment_id = fields.StringField(default=lambda: str(uuid.uuid4()))
     start_ms = fields.IntField(required=True, help_text="Timestamp inizio in millisecondi")
@@ -22,7 +39,36 @@ class AudioSegment(EmbeddedDocument):
 
 class TranscriptSegment(EmbeddedDocument):
     """
-    Singolo segmento di trascrizione con speaker e confidence
+    Rappresenta un singolo segmento di trascrizione con informazioni su speaker e affidabilità.
+    
+    Contiene il testo trascritto per un segmento temporale specifico,
+    includendo metadati come identificazione speaker, confidence score
+    e informazioni di post-processing.
+    
+    :ivar segment_id: Identificatore univoco del segmento di trascrizione
+    :type segment_id: str
+    :ivar text: Testo trascritto per questo segmento
+    :type text: str
+    :ivar speaker_id: ID numerico dello speaker (0=medico, 1=paziente, 2=altro)
+    :type speaker_id: int
+    :ivar speaker_label: Etichetta testuale dello speaker
+    :type speaker_label: str
+    :ivar start_ms: Timestamp di inizio in millisecondi
+    :type start_ms: int
+    :ivar end_ms: Timestamp di fine in millisecondi
+    :type end_ms: int
+    :ivar confidence: Punteggio di affidabilità della trascrizione (0.0-1.0)
+    :type confidence: float
+    :ivar language: Codice lingua rilevata
+    :type language: str
+    :ivar engine: Engine STT utilizzato per la trascrizione
+    :type engine: str
+    :ivar tokens: Lista dei token individuali estratti
+    :type tokens: List[str]
+    :ivar is_corrected: Flag che indica se il testo è stato corretto manualmente
+    :type is_corrected: bool
+    :ivar original_text: Testo originale prima delle correzioni
+    :type original_text: str
     """
     segment_id = fields.StringField(default=lambda: str(uuid.uuid4()))
     text = fields.StringField(required=True, help_text="Testo trascritto")
@@ -42,7 +88,18 @@ class TranscriptSegment(EmbeddedDocument):
 
 class MedicalPatientData(EmbeddedDocument):
     """
-    Dati anagrafici estratti dal testo medico seguendo la struttura del Project 2
+    Rappresenta i dati anagrafici del paziente estratti dal testo medico.
+    
+    Struttura che segue il formato del Project 2 per la memorizzazione
+    di informazioni paziente estratte automaticamente dalle trascrizioni
+    mediante tecniche di NLP e LLM.
+    
+    :ivar first_name: Nome del paziente
+    :type first_name: str
+    :ivar last_name: Cognome del paziente  
+    :type last_name: str
+    :ivar codice_fiscale: Codice fiscale del paziente (max 16 caratteri)
+    :type codice_fiscale: str
     """
     # Anagrafica
     first_name = fields.StringField()

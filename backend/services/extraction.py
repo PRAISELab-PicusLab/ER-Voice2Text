@@ -1,6 +1,7 @@
 """
-Servizio per l'estrazione di dati clinici usando LLM
+Service for extracting clinical data using LLM
 """
+
 import json
 import re
 from typing import Dict, List, Optional, Any
@@ -9,16 +10,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ClinicalExtractionService:
     """
-    Servizio per estrarre dati clinici strutturati da trascrizioni
+    Service for extracting structured clinical data from transcripts
     """
     
     def __init__(self):
         """
-        Inizializza il servizio di estrazione
+        Initialize the extraction service
         """
-        # Template per l'estrazione basato sui progetti di riferimento
+        # Template for extraction based on reference projects
         self.extraction_template = {
             "informazioni_paziente": {
                 "nome": "",
@@ -47,13 +49,13 @@ class ClinicalExtractionService:
 
     def extract_clinical_data(self, transcript: AudioTranscript) -> ClinicalData:
         """
-        Estrae dati clinici strutturati da una trascrizione
-        
-        Args:
-            transcript: Oggetto AudioTranscript da processare
-            
-        Returns:
-            ClinicalData: Oggetto con dati clinici estratti
+        Extract structured clinical data from a transcript
+
+        :param transcript: AudioTranscript object to process
+        :type transcript: AudioTranscript
+        :returns: ClinicalData: Object with extracted clinical data
+        :rtype: ClinicalData
+        :raises Exception: If extraction fails
         """
         try:
             # Crea record di dati clinici
@@ -85,7 +87,12 @@ class ClinicalExtractionService:
 
     def _extract_structured_data(self, text: str) -> Dict[str, Any]:
         """
-        Estrae dati strutturati dal testo usando pattern regex e logica euristica
+        Extract structured data from text using regex patterns and heuristic logic
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: Dictionary with extracted data
+        :rtype: Dict[str, Any]
         """
         data = self.extraction_template.copy()
         
@@ -123,7 +130,12 @@ class ClinicalExtractionService:
 
     def _extract_patient_info(self, text: str) -> Dict[str, str]:
         """
-        Estrae informazioni del paziente
+        Extract patient information
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: Dictionary with patient information
+        :rtype: Dict[str, str]
         """
         info = {}
         
@@ -157,7 +169,12 @@ class ClinicalExtractionService:
 
     def _extract_vital_signs(self, text: str) -> Dict[str, str]:
         """
-        Estrae parametri vitali
+        Extract vital signs
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: Dictionary with vital signs
+        :rtype: Dict[str, str]
         """
         vitals = {}
         
@@ -215,7 +232,12 @@ class ClinicalExtractionService:
 
     def _extract_symptoms(self, text: str) -> List[str]:
         """
-        Estrae sintomi dal testo
+        Extract symptoms from text
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: List of symptoms
+        :rtype: List[str]
         """
         symptoms = []
         
@@ -238,7 +260,12 @@ class ClinicalExtractionService:
 
     def _extract_clinical_tests(self, text: str) -> List[str]:
         """
-        Estrae esami clinici
+        Extract clinical tests
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: List of clinical tests
+        :rtype: List[str]
         """
         tests = []
         
@@ -262,7 +289,12 @@ class ClinicalExtractionService:
 
     def _extract_diagnoses(self, text: str) -> List[str]:
         """
-        Estrae diagnosi
+        Extract diagnoses from text
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: List of diagnoses
+        :rtype: List[str]
         """
         diagnoses = []
         
@@ -284,7 +316,12 @@ class ClinicalExtractionService:
 
     def _extract_therapies(self, text: str) -> List[str]:
         """
-        Estrae terapie e farmaci
+        Extract therapies and medications from text
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: List of therapies/medications
+        :rtype: List[str]
         """
         therapies = []
         
@@ -307,7 +344,12 @@ class ClinicalExtractionService:
 
     def _extract_allergies(self, text: str) -> List[str]:
         """
-        Estrae allergie
+        Extract allergies from text
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: List of allergies
+        :rtype: List[str]
         """
         allergies = []
         
@@ -328,7 +370,12 @@ class ClinicalExtractionService:
 
     def _extract_medical_history(self, text: str) -> str:
         """
-        Estrae storia clinica
+        Extract medical history from text
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: Medical history as a string
+        :rtype: str
         """
         history_patterns = [
             r"storia\s+clinic[a]?\s*:?\s*([^.]+)",
@@ -345,7 +392,12 @@ class ClinicalExtractionService:
 
     def _extract_medical_notes(self, text: str) -> str:
         """
-        Estrae note mediche generali
+        Extract general medical notes from text
+        
+        :param text: Transcript text to analyze
+        :type text: str
+        :returns: Medical notes as a string
+        :rtype: str
         """
         # Rimuovi parti già estratte e mantieni il resto come note
         cleaned_text = text
@@ -364,7 +416,12 @@ class ClinicalExtractionService:
 
     def _determine_triage_priority(self, data: Dict[str, Any]) -> str:
         """
-        Determina la priorità di triage basata sui dati estratti
+        Determine triage priority based on extracted data
+        
+        :param data: Extracted clinical data
+        :type data: Dict[str, Any]
+        :returns: Triage priority level ("ALTA", "MEDIA", "BASSA")
+        :rtype: str
         """
         # Logica di priorità basata sui sintomi e parametri vitali
         vitals = data.get("parametri_vitali", {})
@@ -405,7 +462,12 @@ class ClinicalExtractionService:
 
     def _calculate_extraction_confidence(self, data: Dict[str, Any]) -> float:
         """
-        Calcola un punteggio di confidenza per l'estrazione
+        Calculate a confidence score for the extraction
+        
+        :param data: Extracted clinical data
+        :type data: Dict[str, Any]
+        :returns: Confidence score between 0.0 and 1.0
+        :rtype: float
         """
         total_fields = 0
         filled_fields = 0
@@ -432,7 +494,14 @@ class ClinicalExtractionService:
 
     def _populate_clinical_data_fields(self, clinical_data: ClinicalData, extracted_data: Dict[str, Any]) -> None:
         """
-        Popola i campi del modello ClinicalData con i dati estratti
+        Populate the ClinicalData model fields with extracted data
+        
+        :param clinical_data: ClinicalData object to populate
+        :type clinical_data: ClinicalData
+        :param extracted_data: Dictionary with extracted clinical data
+        :type extracted_data: Dict[str, Any]
+        :returns: None
+        :rtype: None
         """
         try:
             # Informazioni paziente

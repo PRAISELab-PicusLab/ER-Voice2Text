@@ -1,3 +1,7 @@
+"""
+Enhanced service for generating emergency medical PDF reports
+"""
+
 import os
 import logging
 from datetime import datetime
@@ -12,15 +16,17 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+
 class PDFReportService:
     """
-    Servizio migliorato per generazione report PDF medico d'urgenza
-    - layout professionale
-    - dinamico (adatta spazio testo)
-    - più leggibile e ben distanziato
+    Enhanced service for generating emergency medical PDF reports
+    - Professional layout
+    - Dynamic (adapts text space)
+    - More readable and well-spaced
     """
 
     def __init__(self):
+        """Initialize PDF report service with styles and settings"""
         self.media_root = getattr(settings, "MEDIA_ROOT", "/tmp")
         self.logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo2.jpg")
 
@@ -38,6 +44,7 @@ class PDFReportService:
         self.styles.add(ParagraphStyle(name="BoldLabel", fontSize=10, fontName="Helvetica-Bold"))
 
     def generate_medical_report(self, report_data: Dict[str, Any], output_path: str) -> bool:
+        """Generate a professional medical report PDF"""
         try:
             c = canvas.Canvas(output_path, pagesize=self.page_size)
             width, height = self.page_size
@@ -75,6 +82,21 @@ class PDFReportService:
     # INTESTAZIONE
     # --------------------------------------------------------
     def _draw_header(self, c, data, width, height, y):
+        """Draw the header with logo and titles
+        
+        :param c: Canvas object
+        :type c: canvas.Canvas
+        :param data: Report data dictionary
+        :type data: Dict[str, Any]
+        :param width: Page width
+        :type width: float
+        :param height: Page height
+        :type height: float
+        :param y: Current Y position
+        :type y: float
+        :returns: New Y position after drawing header
+        :rtype: float
+        """
         try:
             # Logo
             if os.path.exists(self.logo_path):
@@ -102,6 +124,19 @@ class PDFReportService:
     # SEZIONI PRINCIPALI
     # --------------------------------------------------------
     def _section_patient_info(self, c, data, width, y):
+        """Draw patient demographic info section
+        
+        :param c: Canvas object
+        :type c: canvas.Canvas
+        :param data: Report data dictionary
+        :type data: Dict[str, Any]
+        :param width: Page width
+        :type width: float
+        :param y: Current Y position
+        :type y: float
+        :returns: New Y position after drawing section
+        :rtype: float
+        """
         if y < 150:  # Se poco spazio, nuova pagina
             c.showPage()
             y = self.page_size[1] - self.margin_y
@@ -130,6 +165,19 @@ class PDFReportService:
         return y - 35  # Spazio aumentato tra sezioni
 
     def _section_dates_info(self, c, data, width, y):
+        """Draw dates and urgency codes section
+        
+        :param c: Canvas object
+        :type c: canvas.Canvas
+        :param data: Report data dictionary
+        :type data: Dict[str, Any]
+        :param width: Page width
+        :type width: float
+        :param y: Current Y position
+        :type y: float
+        :returns: New Y position after drawing section
+        :rtype: float
+        """
         if y < 120:  # Se poco spazio, nuova pagina
             c.showPage()
             y = self.page_size[1] - self.margin_y
@@ -166,6 +214,19 @@ class PDFReportService:
         return y - table_height - 40  # Spazio aumentato
 
     def _section_clinical_info(self, c, data, width, y):
+        """Draw clinical information section
+        
+        :param c: Canvas object
+        :type c: canvas.Canvas
+        :param data: Report data dictionary
+        :type data: Dict[str, Any]
+        :param width: Page width
+        :type width: float
+        :param y: Current Y position
+        :type y: float
+        :returns: New Y position after drawing section
+        :rtype: float
+        """
         sections = [
             ("ANAMNESI", f"{data.get('history', '')}<br/>{data.get('medications_taken', '')}"),
             ("ESAME OBIETTIVO", 
@@ -243,6 +304,19 @@ class PDFReportService:
     # TRASCRIZIONE
     # --------------------------------------------------------
     def _section_transcript(self, c, transcript, width, y):
+        """Draw transcript section
+        
+        :param c: Canvas object
+        :type c: canvas.Canvas
+        :param transcript: Transcript text
+        :type transcript: str
+        :param width: Page width
+        :type width: float
+        :param y: Current Y position
+        :type y: float
+        :returns: New Y position after drawing section
+        :rtype: float
+        """
         c.setFont("Helvetica-Bold", 11)
         c.drawString(self.margin_x, y, "TRASCRIZIONE AUDIO")
         y -= 20  # Spazio aumentato
@@ -257,6 +331,13 @@ class PDFReportService:
     # FOOTER
     # --------------------------------------------------------
     def _draw_footer(self, c, width):
+        """Draw footer with signatures
+        
+        :param c: Canvas
+        :type c: canvas.Canvas
+        :param width: Page width
+        :type width: float
+        """
         footer_y = 140  # Spazio aumentato ulteriormente per le firme
         c.setFont("Helvetica-Bold", 10)
         c.drawString(self.margin_x, footer_y + 55, "CONSENSO INFORMATO")
@@ -278,7 +359,19 @@ class PDFReportService:
     # HELPER
     # --------------------------------------------------------
     def _draw_paragraph(self, c, paragraph, width, y):
-        """Renderizza un paragrafo e restituisce nuova Y"""
+        """Render a paragraph and return new Y
+        
+        :param c: Canvas object
+        :type c: canvas.Canvas
+        :param paragraph: Paragraph object to draw
+        :type paragraph: Paragraph
+        :param width: Page width
+        :type width: float
+        :param y: Current Y position
+        :type y: float
+        :returns: New Y position after drawing paragraph
+        :rtype: float
+        """
         available_width = width - 2 * self.margin_x
         _, h = paragraph.wrap(available_width, y)
         paragraph.drawOn(c, self.margin_x, y - h)
@@ -286,6 +379,19 @@ class PDFReportService:
 
     def get_report_path(self, encounter_id: str, report_type: str = "medical",
                         patient_name: str = "", visit_date: str = "") -> str:
+        """Generate a safe file path for the report PDF
+        
+        :param encounter_id: Unique encounter identifier
+        :type encounter_id: str
+        :param report_type: Type of report (default "medical")
+        :type report_type: str
+        :param patient_name: Patient's name for filename (optional)
+        :type patient_name: str
+        :param visit_date: Visit date for filename (optional)
+        :type visit_date: str
+        :returns: Full file path for the report PDF
+        :rtype: str
+        """
         import re
         clean_name = re.sub(r"[^\w\s-]", "", patient_name or "").strip()
         clean_name = re.sub(r"[-\s]+", "_", clean_name)
@@ -294,4 +400,6 @@ class PDFReportService:
         os.makedirs(reports_dir, exist_ok=True)
         return os.path.join(reports_dir, filename)
 
+
+# Istanza singleton del servizio
 pdf_report_service = PDFReportService()

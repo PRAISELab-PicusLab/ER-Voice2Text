@@ -1,6 +1,7 @@
 """
-Servizi per trascrizione audio utilizzando Whisper
+Service for audio transcription using Whisper
 """
+
 import os
 import tempfile
 import re
@@ -13,7 +14,13 @@ logger = logging.getLogger(__name__)
 
 def check_dependencies():
     """
-    Verifica che tutte le dipendenze necessarie siano disponibili
+    Verify that all necessary dependencies for transcription are available.
+
+    Check for the presence of numpy, torch, whisper, and librosa in the system.
+
+    :returns: True if all dependencies are available
+    :rtype: bool
+    :raises ImportError: If one or more dependencies are missing
     """
     missing_deps = []
     
@@ -45,19 +52,33 @@ def check_dependencies():
 
 class TranscriptionService:
     """
-    Servizio per la trascrizione audio usando Whisper
+    Service for audio transcription using OpenAI's Whisper model.
+
+    Handles the complete process of transcribing audio files to text,
+    including preprocessing, transcribing, and post-processing of the result.
+
+    :ivar model_name: Name of the Whisper model to use
+    :type model_name: str
+    :ivar model: Instance of the loaded Whisper model
+    :type model: Optional[Any]
     """
     
     def __init__(self, model_size: str = "base"):
         """
-        Inizializza il servizio con un modello Whisper
+        Initializes the transcription service with a Whisper model.
+
+        :param model_size: Size of the Whisper model ("tiny", "base", "small", "medium", "large")
+        :type model_size: str
         """
         self.model_size = model_size
         self.model = None
         
     def _load_model(self):
         """
-        Carica il modello Whisper solo quando necessario (lazy loading)
+        Loads the Whisper model only when necessary (lazy loading).
+
+        :raises ImportError: If the required dependencies are not available
+        :raises Exception: If an error occurs while loading the model
         """
         if self.model is None:
             try:
@@ -80,15 +101,17 @@ class TranscriptionService:
 
     def transcribe_audio_file(self, audio_file, encounter_id: str, language: str = "it") -> AudioTranscript:
         """
-        Trascrivi un file audio e salva il risultato nel database
-        
-        Args:
-            audio_file: File audio da trascrivere
-            encounter_id: ID dell'encounter associato
-            language: Lingua del contenuto audio
-            
-        Returns:
-            AudioTranscript: Oggetto trascrizione salvato nel database
+        Transcribes an audio file and saves the result to the database.
+
+        :param audio_file: Audio file to transcribe
+        :type audio_file: FileField
+        :param encounter_id: Unique ID of the encounter associated with the transcription
+        :type encounter_id: str
+        :param language: Language code of the audio content (default: "it")
+        :type language: str
+        :returns: Transcription object saved in the database
+        :rtype: AudioTranscript
+        :raises Exception: If an error occurs during transcription
         """
         try:
             # Ottieni l'encounter
@@ -168,7 +191,12 @@ class TranscriptionService:
 
     def _clean_transcript_text(self, text: str) -> str:
         """
-        Pulisce e normalizza il testo trascritto per terminologia medica
+        Cleans and normalizes the transcribed text for medical terminology
+        
+        :param text: Raw transcribed text
+        :type text: str
+        :returns: Cleaned and normalized text
+        :rtype: str
         """
         # Regex per terminologia medica come nel progetto di riferimento
         text = re.sub(r"\bmilligrams?\s+per\s+deciliter\b", "mg/dl", text, flags=re.IGNORECASE)
@@ -195,7 +223,12 @@ class TranscriptionService:
 
     def _calculate_confidence(self, whisper_result) -> float:
         """
-        Calcola un punteggio di confidenza basato sui risultati di Whisper
+        Calculates a confidence score based on Whisper results
+        
+        :param whisper_result: Result dictionary from Whisper transcription
+        :type whisper_result: dict
+        :returns: Confidence score between 0 and 1
+        :rtype: float
         """
         # Whisper non fornisce direttamente un confidence score,
         # quindi usiamo alcune euristiche

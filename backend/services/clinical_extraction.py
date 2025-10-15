@@ -1,6 +1,6 @@
 """
-Servizio unificato per estrazione entità cliniche
-Gestisce sia l'estrazione LLM (NVIDIA NIM) che NER (Text2NER)
+Unified service for extracting clinical entities
+Handles both LLM (NVIDIA NIM) and NER (Text2NER) extraction
 """
 
 import logging
@@ -14,19 +14,38 @@ logger = logging.getLogger(__name__)
 
 
 class ExtractionMethod(Enum):
-    """Metodi di estrazione disponibili"""
+    """
+    Listing of available clinical entity extraction methods.
+    
+    :cvar LLM: Extraction using Large Language Model (NVIDIA NIM)
+    :cvar NER: Extraction using Named Entity Recognition
+    """
     LLM = "llm"
     NER = "ner"
 
 
 class ClinicalExtractionService:
     """
-    Servizio unificato per estrazione entità cliniche
-    Permette di scegliere tra LLM e NER mantenendo un'interfaccia consistente
+    Unified service for extracting clinical entities from medical transcriptions.
+
+    Allows selection between different extraction methods (LLM and NER)
+    while maintaining a consistent interface for usage.
+
+    :ivar llm_service: Service for extraction using LLM
+    :type llm_service: Optional[NVIDIANIMService]
+    :ivar ner_service: Service for extraction using NER
+    :type ner_service: Optional[NERService]
+    :ivar default_method: Default extraction method
+    :type default_method: ExtractionMethod
     """
     
     def __init__(self):
-        
+        """
+        Initializes the clinical extraction service.
+
+        Configures the available LLM and NER services, handling any initialization errors
+        and setting the default method.
+        """
         # Inizializza LLM service
         try:
             self.llm_service = nvidia_nim_service
@@ -45,14 +64,14 @@ class ClinicalExtractionService:
     
     def get_available_methods(self) -> Dict[str, Dict[str, Any]]:
         """
-        Restituisce i metodi di estrazione disponibili con il loro stato
-        
-        Returns:
-            Dizionario con informazioni sui metodi disponibili
+        Returns the available extraction methods with their operational status.
+
+        :returns: Dictionary containing information about available methods and their status
+        :rtype: Dict[str, Dict[str, Any]]
         """
         llm_status = self.llm_service.test_connection()
-        
-        # Gestione sicura per NER
+
+        # Safe handling for NER
         if self.ner_service:
             try:
                 ner_status = self.ner_service.test_connection()
@@ -94,32 +113,31 @@ class ClinicalExtractionService:
         usage_mode: str = ""
     ) -> Dict[str, Any]:
         """
-        Estrae entità cliniche dal testo usando il metodo specificato
-        
-        Args:
-            transcript_text: Testo della trascrizione medica
-            method: Metodo di estrazione ("llm" o "ner")
-            usage_mode: Modalità d'uso (es. "Checkup", "Emergency")
-            
-        Returns:
-            Dizionario con entità cliniche estratte
+        Extract clinical entities from a medical transcription using the specified method.
+
+        :param transcript_text: Text of the medical transcription to analyze
+        :type transcript_text: str
+        :param method: Extraction method ("llm" or "ner"), if None uses the default
+        :type method: str
+        :param usage_mode: Usage mode to customize extraction (e.g. "Checkup", "Emergency")
+        :type usage_mode: str
+        :returns: Dictionary containing the extracted clinical entities and metadata
+        :rtype: Dict[str, Any]
+        :raises ValueError: If the specified method is invalid
         """
-        # Determina il metodo da usare
+        # Determines the method to use
         if method is None:
             method = self.default_method.value
-        
-        # Valida il metodo
+
+        # Validates the method
         if method not in ["llm", "ner"]:
-            logger.error(f"Metodo di estrazione non valido: {method}")
-            return self._error_response(f"Metodo non supportato: {method}")
-        
-        # Log del metodo scelto
-        logger.info(f"Estrazione entità cliniche con metodo: {method.upper()}")
-        print(f"\n=== ESTRAZIONE ENTITÀ CLINICHE ===")
-        print(f"Metodo: {method.upper()}")
-        print(f"Modalità: {usage_mode}")
-        print(f"Lunghezza testo: {len(transcript_text)} caratteri")
-        
+            logger.error(f"Invalid extraction method: {method}")
+            return self._error_response(f"Unsupported method: {method}")
+
+        # Log of the chosen method
+        logger.info(f"Extracting clinical entities with method: {method.upper()}")
+        logger.debug(f"Usage mode: {usage_mode}, text length: {len(transcript_text)} characters")
+
         try:
             if method == ExtractionMethod.LLM.value:
                 result = self._extract_with_llm(transcript_text, usage_mode)
@@ -133,23 +151,37 @@ class ClinicalExtractionService:
             result['timestamp'] = self._get_timestamp()
             result['text_length'] = len(transcript_text)
             
-            print(f"Estrazione completata con successo")
-            print(f"Dati estratti: {len(result.get('extracted_data', {}))} campi")
-            print(f"Errori validazione: {len(result.get('validation_errors', []))}")
-            print(f"==================================\n")
-            
+            logger.info(f"Extraction completed: {len(result.get('extracted_data', {}))} fields extracted, "
+                        f"{len(result.get('validation_errors', []))} validation errors")
+
             return result
             
         except Exception as e:
-            logger.error(f"Errore durante estrazione con metodo {method}: {str(e)}")
-            return self._error_response(f"Errore estrazione: {str(e)}")
+            logger.error(f"Error during extraction with method {method}: {str(e)}")
+            return self._error_response(f"Extraction error: {str(e)}")
     
     def _extract_with_llm(self, transcript_text: str, usage_mode: str) -> Dict[str, Any]:
-        """Estrae entità usando il servizio LLM"""
+        """Extract entities using the LLM service
+        
+        :param transcript_text: Text of the medical transcription to analyze
+        :type transcript_text: str
+        :param usage_mode: Usage mode to customize extraction
+        :type usage_mode: str
+        :returns: Extracted clinical entities and metadata
+        :rtype: Dict[str, Any]
+        """
         return self.llm_service.extract_clinical_entities(transcript_text, usage_mode)
     
     def _extract_with_ner(self, transcript_text: str, usage_mode: str) -> Dict[str, Any]:
-        """Estrae entità usando il servizio NER"""
+        """Extract entities using the NER service
+        
+        :param transcript_text: Text of the medical transcription to analyze
+        :type transcript_text: str
+        :param usage_mode: Usage mode to customize extraction
+        :type usage_mode: str
+        :returns: Extracted clinical entities and metadata
+        :rtype: Dict[str, Any]
+        """
         if not self.ner_service:
             return self._error_response("Servizio NER non disponibile")
         
@@ -161,13 +193,12 @@ class ClinicalExtractionService:
     
     def set_default_method(self, method: str) -> bool:
         """
-        Imposta il metodo di estrazione predefinito
-        
-        Args:
-            method: Metodo da impostare come predefinito ("llm" o "ner")
-            
-        Returns:
-            True se il metodo è stato impostato correttamente
+        Setting of default extraction method
+
+        :param method: Method to set as default ("llm" or "ner")
+        :type method: str
+        :returns: True if the method was set successfully
+        :rtype: bool
         """
         if method in ["llm", "ner"]:
             self.default_method = ExtractionMethod.LLM if method == "llm" else ExtractionMethod.NER
@@ -179,15 +210,15 @@ class ClinicalExtractionService:
     
     def get_method_comparison(self, transcript_text: str, usage_mode: str = "") -> Dict[str, Any]:
         """
-        Esegue l'estrazione con entrambi i metodi per confronto
-        ATTENZIONE: Operazione costosa, usare solo per testing/debug
-        
-        Args:
-            transcript_text: Testo della trascrizione medica
-            usage_mode: Modalità d'uso
-            
-        Returns:
-            Dizionario con risultati di entrambi i metodi
+        Execute extraction with both methods for comparison
+        WARNING: This is a costly operation, use only for testing/debugging
+
+        :param transcript_text: Text of the medical transcription
+        :type transcript_text: str
+        :param usage_mode: Usage mode
+        :type usage_mode: str
+        :returns: Dictionary with results from both methods
+        :rtype: Dict[str, Any]
         """
         logger.warning("Esecuzione confronto tra metodi LLM e NER - operazione costosa")
         
@@ -225,7 +256,15 @@ class ClinicalExtractionService:
         return results
     
     def _compare_extracted_fields(self, llm_data: Dict, ner_data: Dict) -> Dict[str, Any]:
-        """Confronta i campi estratti dai due metodi"""
+        """Compare extracted fields from both methods
+        
+        :param llm_data: Extracted data from LLM
+        :type llm_data: Dict
+        :param ner_data: Extracted data from NER
+        :type ner_data: Dict
+        :returns: Comparison results including matching and differing fields
+        :rtype: Dict[str, Any]
+        """
         comparison = {
             "matching_fields": [],
             "different_fields": [],
@@ -262,7 +301,13 @@ class ClinicalExtractionService:
         return comparison
     
     def _error_response(self, error_message: str) -> Dict[str, Any]:
-        """Crea una risposta di errore standardizzata"""
+        """Create a standardized error response
+        
+        :param error_message: Description of the error
+        :type error_message: str
+        :returns: Standardized error response dictionary
+        :rtype: Dict[str, Any]
+        """
         return {
             'extracted_data': {},
             'validation_errors': [error_message],
@@ -273,7 +318,11 @@ class ClinicalExtractionService:
         }
     
     def _get_timestamp(self) -> str:
-        """Restituisce timestamp corrente in formato ISO"""
+        """Returns the current timestamp in ISO format
+
+        :returns: Current timestamp in ISO format
+        :rtype: str
+        """
         from datetime import datetime
         return datetime.now().isoformat()
 

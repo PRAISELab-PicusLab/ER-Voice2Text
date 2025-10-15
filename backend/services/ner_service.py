@@ -1,6 +1,6 @@
 """
-Servizio per estrazione entità cliniche con modello NER
-Gestisce l'estrazione tramite il modello Text2NER di pacovalentino
+Service for extracting clinical entities with NER model
+Manages extraction using the Text2NER model from pacovalentino/Text2NER
 """
 
 import torch
@@ -11,19 +11,21 @@ import re
 
 logger = logging.getLogger(__name__)
 
+
 class NERService:
     """
-    Servizio per estrazione entità cliniche con modello NER Text2NER
+    Service for extracting clinical entities with NER model pacovalentino/Text2NER
     """
     
     def __init__(self):
+        """Initialize the NER service"""
         self.model_path = "pacovalentino/Text2NER"
         self.ner_pipeline = None
         self.available = False
         self._initialize_model()
     
     def _initialize_model(self):
-        """Inizializza il modello NER"""
+        """Initialize the NER model"""
         try:
             from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
             
@@ -67,10 +69,10 @@ class NERService:
     
     def test_connection(self) -> Dict[str, Any]:
         """
-        Testa la disponibilità del modello NER
-        
-        Returns:
-            Dizionario con informazioni sul modello
+        Test the availability of the NER model
+
+        :returns: Dictionary with model information
+        :rtype: Dict[str, Any]
         """
         if not self.available:
             return {
@@ -124,22 +126,21 @@ class NERService:
     
     def extract_clinical_entities(self, transcript_text: str, usage_mode: str = "") -> Dict[str, Any]:
         """
-        Estrae entità cliniche dal testo trascritto usando il modello NER
+        Extract clinical entities from the transcribed text using the NER model
         
-        Args:
-            transcript_text: Testo della trascrizione medica
-            usage_mode: Modalità d'uso (es. "Checkup", "Emergency")
-            
-        Returns:
-            Dizionario con entità cliniche estratte
+        :param str transcript_text: Transcribed medical text
+        :type transcript_text: str
+        :param str usage_mode: Usage mode (e.g. "Checkup", "Emergency")
+        :type usage_mode: str
+        :returns: Dictionary with extracted clinical entities
+        :rtype: Dict[str, Any]
         """
         if not self.available or not self.ner_pipeline:
             logger.warning("Modello NER non disponibile: utilizzo fallback")
             return self._fallback_response("Modello NER non caricato")
         
         try:
-            print(f"\n=== ESTRAZIONE NER ===")
-            print(f"Modalità: {usage_mode}")
+            logger.debug(f"Avvio estrazione NER con modalità: {usage_mode}")
             
             # Splitta il testo in frasi per analisi più accurata
             sentences = self._split_text_into_sentences(transcript_text)
@@ -153,9 +154,10 @@ class NERService:
                     sentence_results = self.ner_pipeline(sentence)
                     all_ner_results.extend(sentence_results)
             
-            print(f"Totale entità trovate: {len(all_ner_results)}")
-            for result in all_ner_results:
-                print(f"  {result['word']:<30} | {result['entity_group']}")
+            logger.debug(f"Totale entità trovate: {len(all_ner_results)}")
+            if logger.isEnabledFor(logging.DEBUG):
+                for result in all_ner_results:
+                    logger.debug(f"  {result['word']:<30} | {result['entity_group']}")
             
             # Mappa le entità NER ai campi standard con aggregazione
             extracted_data = self._map_ner_to_clinical_fields_aggregated(all_ner_results, transcript_text)
@@ -166,8 +168,7 @@ class NERService:
             # Valida i campi estratti
             validation_errors = self._validate_fields(normalized_data, transcript_text)
             
-            print(f"Dati estratti e normalizzati: {normalized_data}")
-            print(f"=====================\n")
+            logger.debug(f"Dati estratti e normalizzati: {len(normalized_data)} campi")
             
             return {
                 'extracted_data': normalized_data,
@@ -185,13 +186,12 @@ class NERService:
     
     def _split_text_into_sentences(self, text: str) -> List[str]:
         """
-        Splitta il testo in frasi usando delimitatori appropriati per il contesto medico
-        
-        Args:
-            text: Testo da splittare
-            
-        Returns:
-            Lista di frasi
+        Split the text into sentences using appropriate delimiters for the medical context
+
+        :param str text: Text to split
+        :type text: str
+        :return: List of sentences
+        :rtype: List[str]
         """
         import re
         
@@ -209,20 +209,20 @@ class NERService:
             if cleaned and len(cleaned) > 3:  # Frasi di almeno 4 caratteri
                 filtered_sentences.append(cleaned)
         
-        print(f"Frasi estratte: {filtered_sentences}")
+        logger.debug(f"Frasi estratte: {len(filtered_sentences)} frasi")
         return filtered_sentences
     
     def _map_ner_to_clinical_fields_aggregated(self, ner_results: List[Dict], transcript_text: str) -> Dict[str, Any]:
         """
-        Mappa le entità NER ai campi clinici standard con aggregazione per tipo
-        Le entità dello stesso tipo vengono unite con la virgola
-        
-        Args:
-            ner_results: Risultati del modello NER da tutte le frasi
-            transcript_text: Testo originale per contesto
-            
-        Returns:
-            Dizionario con campi clinici mappati e aggregati
+        Map the NER entities to standard clinical fields with aggregation by type
+        Entities of the same type are joined with a comma
+
+        :param ner_results: NER model results from all sentences
+        :type ner_results: List[Dict]
+        :param transcript_text: Original text for context
+        :type transcript_text: str
+        :return: Dictionary with mapped and aggregated clinical fields
+        :rtype: Dict[str, Any]
         """
         from collections import defaultdict
         
@@ -234,7 +234,7 @@ class NERService:
             label = entity['entity_group']
             entities_by_type[label].append(entity_text)
         
-        print(f"Entità raggruppate per tipo: {dict(entities_by_type)}")
+        logger.debug(f"Entità raggruppate per tipo: {len(entities_by_type)} tipi")
         
         # Inizializza tutti i campi vuoti
         clinical_data = {
@@ -407,21 +407,21 @@ class NERService:
             
             # Caso di default per etichette non riconosciute
             else:
-                print(f"ATTENZIONE: Etichetta NER non mappata: '{label}' con valore: {unique_texts}")
+                logger.warning(f"Etichetta NER non mappata: '{label}' con valore: {unique_texts}")
         
         return clinical_data
     
     def _extract_with_units(self, entity_texts: List[str], default_unit: str) -> str:
         """
-        Estrae valore numerico mantenendo l'unità di misura se presente
-        Gestisce correttamente spazi in valori come "120 / 70"
+        Extract numeric values while keeping the unit of measurement if present.
+        Correctly handles spaces in values like "120 / 70"
         
-        Args:
-            entity_texts: Lista di testi con valori numerici
-            default_unit: Unità di misura di default se non presente nel testo
-            
-        Returns:
-            Valore con unità di misura
+        :param entity_texts: List of entity texts to analyze
+        :type entity_texts: List[str]
+        :param default_unit: Default unit to use if none found
+        :type default_unit: str
+        :return: Extracted value with unit
+        :rtype: str
         """
         import re
         
@@ -521,14 +521,14 @@ class NERService:
     
     def _map_ner_to_clinical_fields(self, ner_results: List[Dict], transcript_text: str) -> Dict[str, Any]:
         """
-        Mappa le entità NER ai campi clinici standard
-        
-        Args:
-            ner_results: Risultati del modello NER
-            transcript_text: Testo originale per contesto
-            
-        Returns:
-            Dizionario con campi clinici mappati
+        Map the NER entities to standard clinical fields
+
+        :param ner_results: Risultati del modello NER
+        :type ner_results: List[Dict]
+        :param transcript_text: Testo originale per contesto
+        :type transcript_text: str
+        :return: Dizionario con campi clinici mappati
+        :rtype: Dict[str, Any]
         """
         # Inizializza tutti i campi vuoti
         clinical_data = {
@@ -740,7 +740,13 @@ class NERService:
         return clinical_data
     
     def _normalize_gender(self, text: str) -> str:
-        """Normalizza il campo sesso con mappatura robusta"""
+        """Normalize the gender field with robust mapping
+        
+        :param str text: Input text
+        :type text: str
+        :return: Normalized gender
+        :rtype: str
+        """
         text_lower = text.lower().strip()
         
         # Mappatura completa per genere maschile
@@ -769,7 +775,13 @@ class NERService:
             return 'O'  # Altro/Non specificato
     
     def _normalize_date(self, text: str) -> str:
-        """Normalizza una data nel formato YYYY-MM-DD con supporto per formati italiani"""
+        """Normalize a date into the YYYY-MM-DD format with support for Italian formats
+        
+        :param str text: Input date text
+        :type text: str
+        :return: Normalized date or original text if parsing fails
+        :rtype: str
+        """
         import calendar
         
         # Mappatura dei mesi italiani
@@ -867,14 +879,14 @@ class NERService:
     
     def _normalize_fields_with_units(self, data: Dict[str, Any], usage_mode: str = "") -> Dict[str, Any]:
         """
-        Normalizza i campi estratti mantenendo le unità di misura quando appropriate
-        
-        Args:
-            data: Dati estratti da normalizzare
-            usage_mode: Modalità d'uso
-            
-        Returns:
-            Dati normalizzati con unità di misura preservate
+        Normalize the extracted fields while preserving units of measurement where appropriate
+
+        :param dict data: Extracted data to normalize
+        :type data: Dict[str, Any]
+        :param str usage_mode: Usage mode
+        :type usage_mode: str
+        :return: Normalized data with preserved units of measurement
+        :rtype: Dict[str, Any]
         """
         normalized = data.copy()
         null_values = {"unknown", "na", "n/a", "null", "none", "sconosciuto", ""}
@@ -938,7 +950,14 @@ class NERService:
     
     def _normalize_fields(self, data: Dict[str, Any], usage_mode: str = "") -> Dict[str, Any]:
         """
-        Normalizza i campi estratti con gestione robusta delle unità di misura
+        Normalize the extracted fields while preserving units of measurement where appropriate
+
+        :param dict data: Extracted data to normalize
+        :type data: Dict[str, Any]
+        :param str usage_mode: Usage mode
+        :type usage_mode: str
+        :return: Normalized data with preserved units of measurement
+        :rtype: Dict[str, Any]
         """
         normalized = data.copy()
         null_values = {"unknown", "na", "n/a", "null", "none", "sconosciuto", ""}
@@ -1117,15 +1136,16 @@ class NERService:
     
     def _extract_numeric_with_unit(self, text: str, expected_units: list, value_range: tuple = None) -> tuple:
         """
-        Estrae un valore numerico con unità di misura da un testo
-        
-        Args:
-            text: Testo da analizzare
-            expected_units: Lista delle unità attese (es. ['bpm', 'battiti'])
-            value_range: Tupla (min, max) per validazione del range
-            
-        Returns:
-            Tupla (valore, unità) o (None, None) se non trovato
+        Extract a numeric value with unit of measurement from a text
+
+        :param str text: Text to analyze
+        :type text: str
+        :param list expected_units: List of expected units (e.g. ['bpm', 'battiti'])
+        :type expected_units: list
+        :param tuple value_range: Tuple (min, max) for range validation
+        :type value_range: tuple
+        :return: Tuple (value, unit) or (None, None) if not found
+        :rtype: tuple
         """
         text_lower = text.lower().strip()
         
@@ -1155,13 +1175,12 @@ class NERService:
     
     def _parse_vital_signs_text(self, text: str) -> Dict[str, Any]:
         """
-        Analizza un testo per estrarre tutti i segni vitali presenti
-        
-        Args:
-            text: Testo contenente parametri vitali
-            
-        Returns:
-            Dizionario con i parametri trovati
+        Analyze a text to extract all present vital signs
+
+        :param str  text: Text containing vital parameters
+        :type text: str
+        :return: Dictionary with found parameters
+        :rtype: Dict[str, Any]
         """
         vitals = {}
         text_lower = text.lower()
@@ -1206,7 +1225,14 @@ class NERService:
     
     def _validate_fields(self, data: Dict[str, Any], original_text: str) -> List[str]:
         """
-        Valida i campi estratti contro il testo originale
+        Validate extracted fields against the original text
+        
+        :param dict data: Extracted data to validate
+        :type data: Dict[str, Any]
+        :param str original_text: Original text for context
+        :type original_text: str
+        :return: List of validation error messages
+        :rtype: List[str]
         """
         error_fields = []
         original_text_lower = original_text.lower()
@@ -1236,7 +1262,13 @@ class NERService:
         return list(set(error_fields))
 
     def _fallback_response(self, warning: Optional[str] = None) -> Dict[str, Any]:
-        """Risposta di fallback quando il modello NER non è disponibile"""
+        """Response fallback when the NER model is not available
+        
+        :param str warning: Optional warning message
+        :type warning: str
+        :return: Fallback response payload
+        :rtype: Dict[str, Any]
+        """
         payload = {
             'extracted_data': {},
             'validation_errors': [],

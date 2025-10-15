@@ -1,6 +1,6 @@
 """
-Servizio semplificato per trascrizione audio con Whisper medium
-Versione stabile per produzione
+Service for audio transcription with Whisper medium
+Stable version for production
 """
 
 import os
@@ -22,70 +22,70 @@ logger = logging.getLogger(__name__)
 
 class WhisperService:
     """
-    Servizio semplificato per trascrizione con Whisper medium
+    Service for audio transcription with Whisper medium
     """
     
     def __init__(self):
         self.model = None
-        self.model_name = "medium"  # Bilanciamento tra qualità e velocità
+        self.model_name = "medium"  # Balance between quality and speed
         self._load_model()
     
     def _load_model(self):
-        """Carica il modello Whisper"""
+        """Load the Whisper model"""
         if not WHISPER_AVAILABLE:
-            logger.error("Whisper non disponibile")
+            logger.error("Whisper not available, cannot load model")
             return
         
         try:
-            logger.info(f"Caricamento modello Whisper {self.model_name}...")
+            logger.info(f"Loading Whisper model {self.model_name}...")
             self.model = whisper.load_model(self.model_name)
-            logger.info(f"Modello Whisper {self.model_name} caricato con successo")
+            logger.info(f"Whisper model {self.model_name} loaded successfully")
         except Exception as e:
-            logger.error(f"Errore caricamento modello Whisper: {str(e)}")
+            logger.error(f"Error loading Whisper model: {str(e)}")
             self.model = None
     
     def transcribe_audio_file(self, audio_file_path: str, language: str = "it") -> Dict[str, Any]:
         """
-        Trascrizione di file audio con Whisper
-        
-        Args:
-            audio_file_path: Percorso al file audio
-            language: Lingua per la trascrizione (default: italiano)
-            
-        Returns:
-            Dizionario con risultati trascrizione
+        Transcription of audio file with Whisper
+
+        :param audio_file_path: Path to the audio file
+        :type audio_file_path: str
+        :param language: Language for transcription (default: Italian)
+        :type language: str
+        :return: Dictionary with transcription results
+        :rtype: Dict[str, Any]
         """
         if not self.model:
-            logger.error("Modello Whisper non caricato")
+            logger.error("Whisper model not loaded")
             return {
                 'success': False,
-                'error': 'Modello Whisper non disponibile',
+                'error': 'Whisper model not available',
                 'transcript': '',
                 'confidence': 0.0
             }
         
         if not os.path.exists(audio_file_path):
-            logger.error(f"File audio non trovato: {audio_file_path}")
+            logger.error(f"Audio file not found: {audio_file_path}")
             return {
                 'success': False,
-                'error': 'File audio non trovato',
+                'error': 'Audio file not found',
                 'transcript': '',
                 'confidence': 0.0
             }
         
         try:
-            logger.info(f"Avvio trascrizione file: {audio_file_path}")
-            
-            # Trascrizione con Whisper
+            logger.info(f"Starting transcription for file: {audio_file_path}")
+
+            # Transcription with Whisper
             result = self.model.transcribe(
                 audio_file_path,
                 language=language,
                 task="transcribe",
-                temperature=0.1,  # Bassa temperatura per output più stabile
-                best_of=5,        # Migliore di 5 tentativi
-                beam_size=5,      # Beam search per migliore qualità
-                patience=1.0,     # Patience per beam search
-                condition_on_previous_text=False  # Non condizionare su testo precedente
+                temperature=0.1,  # Low temperature for more stable output
+                best_of=5,        # Best of 5 attempts
+                beam_size=5,      # Beam search for better quality
+                patience=1.0,     # Patience for beam search
+                condition_on_previous_text=False  # Do not condition on previous text
             )
             
             transcript = result.get('text', '').strip()
@@ -117,11 +117,11 @@ class WhisperService:
                 'duration': result.get('duration', 0.0),
                 'segments': segments,
                 'model': self.model_name,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(datetime.timezone.utc).isoformat()
             }
             
         except Exception as e:
-            logger.error(f"Errore durante trascrizione: {str(e)}")
+            logger.error(f"Error during transcription: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),
@@ -131,26 +131,27 @@ class WhisperService:
     
     def transcribe_audio_blob(self, audio_blob: bytes, format: str = "wav", language: str = "it") -> Dict[str, Any]:
         """
-        Trascrizione di blob audio con Whisper
-        
-        Args:
-            audio_blob: Dati audio in bytes
-            format: Formato audio (wav, mp3, etc.)
-            language: Lingua per la trascrizione
-            
-        Returns:
-            Dizionario con risultati trascrizione
+        Transcription of audio blob with Whisper
+
+        :param audio_blob: Audio data in bytes
+        :type audio_blob: bytes
+        :param format: Audio format (wav, mp3, etc.)
+        :type format: str
+        :param language: Language for transcription (default: Italian)
+        :type language: str
+        :return: Dictionary with transcription results
+        :rtype: Dict[str, Any]
         """
-        # Salva il blob in un file temporaneo
+        # Save the blob to a temporary file
         try:
             with tempfile.NamedTemporaryFile(suffix=f".{format}", delete=False) as temp_file:
                 temp_file.write(audio_blob)
                 temp_path = temp_file.name
-            
-            # Trascrivi il file temporaneo
+
+            # Transcribe the temporary file
             result = self.transcribe_audio_file(temp_path, language)
-            
-            # Rimuovi file temporaneo
+
+            # Remove temporary file
             try:
                 os.unlink(temp_path)
             except:
@@ -169,7 +170,12 @@ class WhisperService:
     
     def _clean_transcript(self, text: str) -> str:
         """
-        Pulizia del testo trascritto per uso medico
+        Text cleaning for medical transcription use
+        
+        :param text: Raw transcript text
+        :type text: str
+        :returns: Cleaned text
+        :rtype: str
         """
         if not text:
             return ""
@@ -189,7 +195,10 @@ class WhisperService:
     
     def test_transcription(self) -> Dict[str, Any]:
         """
-        Test del servizio di trascrizione
+        Test the transcription service
+        
+        :returns: Dictionary with test results
+        :rtype: Dict[str, Any]
         """
         if not self.model:
             return {
@@ -207,7 +216,10 @@ class WhisperService:
     
     def get_supported_formats(self) -> list:
         """
-        Formati audio supportati
+        Supported audio formats
+        
+        :returns: List of supported audio formats
+        :rtype: list
         """
         return ['wav', 'mp3', 'flac', 'ogg', 'm4a', 'aac']
 

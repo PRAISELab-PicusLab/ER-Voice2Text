@@ -1,6 +1,6 @@
 """
-Servizio per integrazione con NVIDIA NIM API
-Gestisce le chiamate LLM per l'estrazione di entità cliniche
+Service for integration with NVIDIA NIM API
+Handles LLM calls for extracting clinical entities
 """
 
 from openai import OpenAI
@@ -16,10 +16,27 @@ logger = logging.getLogger(__name__)
 
 class NVIDIANIMService:
     """
-    Servizio per chiamate LLM via NVIDIA NIM
+    Service for integration with NVIDIA NIM API for clinical entity extraction.
+    
+    Handles LLM calls for structured extraction of medical information
+    from audio transcriptions, with support for local fallback when the service
+    is not available.
+    
+    :ivar model: LLM model used for extraction
+    :type model: str
+    :ivar available: Flag indicating if the service is available
+    :type available: bool
+    :ivar client: OpenAI client for API calls
+    :type client: Optional[OpenAI]
     """
     
     def __init__(self):
+        """
+        Initializes the NVIDIA NIM service.
+        
+        Configures the OpenAI client with credentials and base URL from Django settings.
+        If credentials are not available, enables fallback mode.
+        """
         self.model = getattr(settings, 'NVIDIA_MODEL', "openai/gpt-oss-20b")
         self.available = bool(settings.NVIDIA_API_KEY)
 
@@ -34,10 +51,11 @@ class NVIDIANIMService:
     
     def test_connection(self) -> Dict[str, Any]:
         """
-        Testa la connessione con NVIDIA NIM API
-        
-        Returns:
-            Dizionario con informazioni sulla connessione
+        Tests the connection with NVIDIA NIM API.
+
+        :returns: Dictionary containing information about the connection status
+        :rtype: Dict[str, Any]
+        :raises Exception: If an error occurs during connection testing
         """
         if not self.available:
             return {
@@ -84,22 +102,22 @@ class NVIDIANIMService:
     
     def extract_clinical_entities(self, transcript_text: str, usage_mode: str = "") -> Dict[str, Any]:
         """
-        Estrae entità cliniche dal testo trascritto usando NVIDIA NIM
-        
-        Args:
-            transcript_text: Testo della trascrizione medica
-            usage_mode: Modalità d'uso (es. "Checkup", "Emergency")
-            
-        Returns:
-            Dizionario con entità cliniche estratte
+        Extract structured clinical entities from a medical transcription using NVIDIA NIM.
+
+        :param transcript_text: Text of the medical transcription to analyze
+        :type transcript_text: str
+        :param usage_mode: Service usage mode (e.g. "Checkup", "Emergency")
+        :type usage_mode: str
+        :returns: Dictionary containing the extracted structured clinical entities
+        :rtype: Dict[str, Any]
+        :raises Exception: If an error occurs during extraction
         """
         if not self.available or not self.client:
             logger.warning("NVIDIA NIM non disponibile: utilizzo fallback locale per estrazione entità")
             return self._fallback_response("NVIDIA_API_KEY non configurata")
         
         prompt = self._create_extraction_prompt(transcript_text, usage_mode)
-        print(f"\n=== PROMPT NVIDIA NIM ===")
-        print(f"{prompt}")
+        logger.debug(f"Prompt generato per NVIDIA NIM: {prompt[:200]}...")
         
         try:
             completion = self.client.chat.completions.create(
@@ -115,36 +133,28 @@ class NVIDIANIMService:
             response_text = ""
             reasoning_text = ""
             
-            print(f"\n=== RISPOSTA NVIDIA NIM (STREAMING) ===")
+            logger.debug("Avvio processamento risposta streaming da NVIDIA NIM")
             for chunk in completion:
                 # Gestisce reasoning content se presente
                 reasoning = getattr(chunk.choices[0].delta, "reasoning_content", None)
                 if reasoning:
                     reasoning_text += reasoning
-                    print(f"[REASONING] {reasoning}", end="")
                 
                 # Gestisce il contenuto normale
                 if chunk.choices[0].delta.content is not None:
                     content = chunk.choices[0].delta.content
                     response_text += content
-                    print(content, end="")
             
-            print(f"\n=== FINE STREAMING ===")
-            print(f"Testo completo: {response_text}")
-            print(f"Lunghezza: {len(response_text)} caratteri")
+            logger.debug(f"Risposta completa ricevuta: {len(response_text)} caratteri")
             if reasoning_text:
-                print(f"Reasoning: {reasoning_text}")
-            print(f"===========================\n")
+                logger.debug(f"Reasoning disponibile: {len(reasoning_text)} caratteri")
             
             # Estrai e parsa il JSON dalla risposta
             extracted_data = self._parse_json_response(response_text)
             
-            print(f"\n=== PARSING JSON ===")
-            print(f"Extracted data: {extracted_data}")
-            print(f"Tipo: {type(extracted_data)}")
             if extracted_data is None:
-                print("ERRORE: extracted_data è None - parsing fallito")
-            print(f"====================\n")
+                logger.error("Parsing JSON fallito - extracted_data è None")
+                return self._fallback_response("Errore parsing risposta LLM")
             
             if extracted_data:
                 # Normalizza i campi seguendo la logica del Project 2
@@ -170,7 +180,15 @@ class NVIDIANIMService:
             return self._fallback_response(warning)
     
     def _create_extraction_prompt(self, text: str, usage_mode: str) -> str:
-        """Crea il prompt per l'estrazione entità"""
+        """Create the prompt for entity extraction
+        
+        :param text: Text of the medical transcription to analyze
+        :type text: str
+        :param usage_mode: Service usage mode (e.g. "Checkup", "Emergency")
+        :type usage_mode: str
+        :returns: The constructed prompt string
+        :rtype: str
+        """
         prompt = f"""Estrai le informazioni richieste in formato JSON dal seguente testo clinico in italiano:
 
 {text}
@@ -217,16 +235,21 @@ JSON:
         return prompt
     
     def _parse_json_response(self, response_text: str) -> Optional[Dict[str, Any]]:
-        """Estrae e parsa il JSON dalla risposta del modello"""
-        print(f"\n=== DEBUG PARSING ===")
-        print(f"Testo da parsare: '{response_text[:500]}...'")
+        """
+        Extract and parse the JSON from the LLM model response.
+
+        :param response_text: Text of the response containing JSON to extract
+        :type response_text: str
+        :returns: Dictionary parsed from the JSON or None if parsing failed
+        :rtype: Optional[Dict[str, Any]]
+        """
+        logger.debug(f"Inizio parsing JSON da testo di {len(response_text)} caratteri")
         
         try:
             # Trova il primo blocco JSON nella risposta
             start = response_text.find('{')
-            print(f"Posizione primo '{{': {start}")
             if start == -1:
-                print("ERRORE: Nessun '{' trovato nella risposta")
+                logger.error("Nessun blocco JSON trovato nella risposta")
                 return None
             
             depth = 0
@@ -237,22 +260,27 @@ JSON:
                     depth -= 1
                     if depth == 0:
                         json_str = response_text[start:i+1]
-                        print(f"JSON estratto: '{json_str}'")
                         result = json.loads(json_str)
-                        print(f"JSON parsato con successo: {result}")
+                        logger.debug("JSON parsato con successo")
                         return result
             
-            print("ERRORE: Blocco JSON non chiuso correttamente")
+            logger.error("Blocco JSON non chiuso correttamente")
             return None
             
         except json.JSONDecodeError as e:
-            print(f"ERRORE parsing JSON: {e}")
-            print(f"Testo che ha causato l'errore: '{response_text}'")
+            logger.error(f"Errore parsing JSON: {e}")
             return None
     
     def _normalize_fields(self, data: Dict[str, Any], usage_mode: str = "") -> Dict[str, Any]:
         """
-        Normalizza i campi estratti mantenendo le unità di misura quando appropriate
+        Normalize the extracted fields while preserving units of measurement where appropriate.
+
+        :param data: Dictionary containing the extracted data to normalize
+        :type data: Dict[str, Any]
+        :param usage_mode: Usage mode to customize normalization
+        :type usage_mode: str
+        :returns: Dictionary with normalized fields
+        :rtype: Dict[str, Any]
         """
         import re
         
@@ -396,7 +424,14 @@ JSON:
     
     def _validate_fields(self, data: Dict[str, Any], original_text: str) -> list:
         """
-        Valida i campi estratti contro il testo originale
+        Validate the extracted fields against the original transcription text.
+
+        :param data: Dictionary containing the extracted data to validate
+        :type data: Dict[str, Any]
+        :param original_text: Original text of the transcription for validation
+        :type original_text: str
+        :returns: List of fields that failed validation
+        :rtype: list
         """
         import re
         from dateutil.parser import parse
@@ -445,6 +480,14 @@ JSON:
         return list(set(error_fields))
 
     def _fallback_response(self, warning: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Generate a fallback response when the NVIDIA NIM service is unavailable.
+
+        :param warning: Optional warning message to include
+        :type warning: Optional[str]
+        :returns: Dictionary with structured fallback response
+        :rtype: Dict[str, Any]
+        """
         payload: Dict[str, Any] = {
             'extracted_data': {},
             'validation_errors': [],

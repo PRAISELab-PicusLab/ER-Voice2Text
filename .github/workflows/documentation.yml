@@ -38,6 +38,7 @@ jobs:
         run: |
           cd docs
           make html
+          cp source/.nojekyll build/html/
           
       - name: Setup Pages
         if: github.ref == 'refs/heads/main'

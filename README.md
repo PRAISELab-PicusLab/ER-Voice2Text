@@ -1,103 +1,185 @@
-# Sistema Medico Unificato - Voice2Care
+# ER-Voice2Text - Unified Medical System
 
-Sistema unificato per la gestione di cartelle cliniche nel Pronto Soccorso con trascrizione automatica vocale e intelligence artificiale.
+Unified system for managing clinical records in the Emergency Department with automatic voice transcription and artificial intelligence.
 
-## 📚 Documentazione
+## 📚 Documentation
 
-**📖 [Documentazione completa disponibile qui](https://praiselab-picuslab.github.io/ER-Voice2Text/)**
+**📖 [Complete documentation available here](https://praiselab-picuslab.github.io/ER-Voice2Text/)**
 
-La documentazione include:
-- API Reference completa
-- Guida per sviluppatori
-- Architettura del sistema
-- Esempi di utilizzo
+The documentation includes:
+- Complete API Reference
+- Developer Guide
+- System Architecture
+- Usage Examples
 
 ---
 
-## 🏥 Caratteristiche
+## 🏥 Features
 
-- **Autenticazione sicura** per medici del Pronto Soccorso
-- **Dashboard tempo reale** per gestione pazienti ed episodi
-- **Registrazione vocale** e trascrizione automatica
-- **Estrazione automatica** di dati clinici strutturati
-- **Generazione report** PDF automatizzata
-- **API REST** complete per integrazione
+- **Secure authentication** for Emergency Department doctors
+- **Real-time dashboard** for patient and episode management
+- **Voice recording** and automatic transcription
+- **Automatic extraction** of structured clinical data
+- **Automated PDF report** generation
+- **Complete REST APIs** for integration
 
-## 🚀 Tecnologie
+## 🚀 Technologies
 
 ### Backend
-- **Django 4.2.7** con Django REST Framework
-- **SQLite** database (facilmente migrabile a PostgreSQL)
-- **Python 3.9+** con supporto ML/AI
+- **Django 4.2.7** with Django REST Framework
+- **SQLite** database (easily migrable to PostgreSQL)
+- **Python 3.9+** with ML/AI support
 
 ### Frontend
-- **React 18** con Vite
-- **Bootstrap Italia** per UI/UX conforme
-- **React Query** per state management API
-- **React Router** per navigazione
+- **React 18** with Vite
+- **Bootstrap Italia** for compliant UI/UX
+- **React Query** for API state management
+- **React Router** for navigation
 
-## 📁 Struttura del Progetto
+### AI Services
+- **NVIDIA NIM** for clinical entity extraction
+- **Whisper** for speech-to-text transcription
+- **MongoDB** for unstructured data storage
+- **Named Entity Recognition** for medical text analysis
+
+## 📁 Project Structure
 
 ```
-unified-medical-system/
+ER-Voice2Text/
 ├── backend/                    # Django Backend
-│   ├── medical_system/        # Configurazione principale
-│   │   ├── settings.py        # Configurazioni unificate
-│   │   ├── urls.py           # URL routing principale
-│   │   └── auth_views.py     # Autenticazione centralizzata
-│   ├── core/                 # Modelli core del sistema
+│   ├── medical_system/        # Main configuration
+│   │   ├── settings.py        # Unified configurations
+│   │   ├── urls.py           # Main URL routing
+│   │   └── wsgi.py           # WSGI application
+│   ├── core/                 # Core system models
 │   │   ├── models.py         # Doctor, Patient, Encounter
-│   │   └── migrations/       # Migrazioni database
-│   ├── api/                  # API REST
-│   │   ├── views.py          # ViewSets API
-│   │   ├── serializers.py    # Serializers unificati
-│   │   └── urls.py          # URL API
+│   │   ├── mongodb_models.py # MongoDB models for AI data
+│   │   └── migrations/       # Database migrations
+│   ├── api/                  # REST API
+│   │   ├── views.py          # API ViewSets
+│   │   ├── medical_workflow_views.py # Medical workflow endpoints
+│   │   ├── serializers.py    # Unified serializers
+│   │   └── urls.py          # API URLs
+│   ├── services/             # AI and Integration Services
+│   │   ├── whisper_service.py    # Audio transcription
+│   │   ├── nvidia_nim.py         # LLM clinical extraction
+│   │   ├── clinical_extraction.py # Clinical data processing
+│   │   ├── pdf_report.py         # PDF report generation
+│   │   └── mongodb_service.py    # MongoDB integration
+│   ├── auth_views.py        # Centralized authentication
 │   ├── manage.py            # Django CLI
-│   └── requirements.txt     # Dipendenze Python
+│   └── requirements.txt     # Python dependencies
 │
 ├── frontend/                  # React Frontend
 │   ├── src/
-│   │   ├── components/       # Componenti React
+│   │   ├── components/       # React components
 │   │   │   ├── Auth/        # Login/Logout
-│   │   │   ├── Dashboard/   # Dashboard principale
-│   │   │   ├── Encounter/   # Gestione episodi
-│   │   │   ├── Layout/      # Layout e navigazione
-│   │   │   ├── Audio/       # Registrazione vocale
-│   │   │   ├── Clinical/    # Editor dati clinici
-│   │   │   └── Report/      # Anteprima report
-│   │   ├── services/        # API client e stores
-│   │   ├── App.jsx         # Componente principale
+│   │   │   ├── Dashboard/   # Main dashboard
+│   │   │   ├── Encounter/   # Episode management
+│   │   │   ├── Layout/      # Layout and navigation
+│   │   │   ├── Audio/       # Voice recording
+│   │   │   ├── Clinical/    # Clinical data editor
+│   │   │   └── Report/      # Report preview
+│   │   ├── services/        # API client and stores
+│   │   ├── App.jsx         # Main component
 │   │   └── main.jsx        # Entry point
-│   ├── package.json        # Dipendenze Node.js
-│   └── vite.config.js      # Configurazione Vite
+│   ├── package.json        # Node.js dependencies
+│   └── vite.config.js      # Vite configuration
 │
-└── README.md               # Questa documentazione
+├── docs/                     # Technical Documentation
+│   ├── source/              # Sphinx documentation source
+│   ├── build/html/          # Generated HTML documentation
+│   ├── generate_docs.bat    # Documentation generation script
+│   └── README.md           # Documentation guide
+│
+└── README.md               # This documentation
 ```
 
-## ⚙️ Setup e Installazione
+## ⚙️ Setup and Installation
 
-### Prerequisiti
+### Prerequisites
 - Python 3.9+
 - Node.js 18+
 - Git
 
-### 🚀 AVVIO RAPIDO
+### 🚀 QUICK START
 
-#### ⚡ Metodo 1: Script automatico (Windows)
+#### ⚡ Method 1: Automatic script (Windows)
 ```bash
-# Doppio click su START.bat oppure esegui:
+# Double click on START.bat or run:
 START.bat
 ```
 
-#### ⚡ Metodo 2: Setup manuale
+#### ⚡ Method 2: Manual setup
 
-**1. Clone del repository**
+**1. Repository clone**
 ```bash
 git clone <repository-url>
-cd unified-medical-system
+cd ER-Voice2Text
 ```
 
-**2. Setup Backend**
+**2. Backend Setup**
+```bash
+cd backend
+
+# Create virtual environment
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run migrations
+python manage.py migrate
+
+# Create superuser for admin
+python manage.py createsuperuser
+
+# Start server
+python manage.py runserver
+```
+
+Backend will be available at `http://localhost:8000`
+
+**3. Frontend Setup**
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+Frontend will be available at `http://localhost:5173`
+
+### 🔗 Quick Links
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000/api/
+- **Django Admin**: http://localhost:8000/admin/
+- **API Documentation**: http://localhost:8000/api/docs/
+
+### 🤖 AI Services Configuration
+
+#### NVIDIA NIM (Optional)
+For enhanced clinical entity extraction:
+```bash
+# Set environment variables in backend/.env
+NVIDIA_API_KEY=your_nvidia_api_key
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+NVIDIA_MODEL=openai/gpt-oss-20b
+```
+
+#### MongoDB (Optional)
+For advanced analytics and unstructured data:
+```bash
+# Set environment variable
+MONGODB_URL=mongodb://localhost:27017/medical_system
+```
+
+The system works with fallback modes if these services are not configured.
 ```bash
 cd backend
 
@@ -139,17 +221,17 @@ Il frontend sarà disponibile su `http://localhost:5173`
 - **Backend API**: http://localhost:8000/api/
 - **Admin Django**: http://localhost:8000/admin/
 
-## 🔑 Autenticazione
+## 🔑 Authentication
 
-Il sistema utilizza autenticazione personalizzata per medici:
+The system uses custom authentication for doctors:
 
-### Endpoint API
-- `POST /auth/login/` - Login medico
+### API Endpoints
+- `POST /auth/login/` - Doctor login
 - `POST /auth/logout/` - Logout
 - `GET /health/` - Health check
 
-### Credenziali di test
-Usa l'admin Django per creare utenti Doctor o usa:
+### Test Credentials
+Use Django admin to create Doctor users or use:
 ```bash
 python manage.py shell
 from core.models import Doctor
@@ -159,44 +241,119 @@ doctor = Doctor.objects.create_user(
     first_name='John',
     last_name='Smith',
     specialization='Emergency Medicine',
-    department='Pronto Soccorso',
+    department='Emergency Department',
     is_emergency_doctor=True
 )
 ```
 
-## 📊 Modelli Dati
+## 📊 Data Models
 
 ### Doctor
-- ID medico univoco
-- Dati anagrafici e credenziali
-- Specializzazione e dipartimento
-- Flag pronto soccorso
+- Unique doctor ID
+- Personal data and credentials
+- Specialization and department
+- Emergency department flag
 
 ### Patient  
-- ID paziente univoco
-- Dati anagrafici completi
-- Codice fiscale
-- Contatti emergenza
+- Unique patient ID
+- Complete personal data
+- Tax code (Italian fiscal code)
+- Emergency contacts
 
 ### Encounter
-- ID episodio univoco
-- Associazione paziente-medico
-- Data/ora ammissione e dimissione
-- Priorità triage e stato
-- Motivo principale accesso
+- Unique episode ID
+- Patient-doctor association
+- Admission and discharge date/time
+- Triage priority and status
+- Main reason for access
 
-## 🔧 API REST
+### AudioTranscript
+- Audio file metadata
+- Transcription text
+- Processing status
+- Timestamps
 
-### Endpoints principali
-- `/api/doctors/` - Gestione medici
-- `/api/patients/` - Gestione pazienti  
-- `/api/encounters/` - Gestione episodi
-- `/api/encounters/{id}/audio/` - Upload audio
-- `/api/encounters/{id}/transcript/` - Trascrizione
-- `/api/encounters/{id}/report/` - Generazione report
+### ClinicalData
+- Extracted medical entities
+- Structured clinical information
+- Processing method (LLM/NER)
+- Confidence scores
 
-### Documentazione API
-Accedi a `/api/docs/` per documentazione interattiva Swagger
+## 🔧 REST API
+
+### Main Endpoints
+- `/api/doctors/` - Doctor management
+- `/api/patients/` - Patient management  
+- `/api/encounters/` - Episode management
+
+### Medical Workflow Endpoints
+- `/api/process-audio-visit/` - Audio processing and transcription
+- `/api/transcripts/{id}/extract-clinical/` - Clinical data extraction
+- `/api/transcripts/{id}/generate-pdf/` - PDF report generation
+- `/api/transcripts/{id}/download-pdf/` - Report download
+- `/api/dashboard/analytics/` - Analytics data
+- `/api/interventions/` - Intervention management
+
+### API Documentation
+Access `/api/docs/` for interactive Swagger documentation
+
+## 🏃‍♂️ Useful Commands
+
+### Backend
+```bash
+# Test
+python manage.py test
+
+# Django shell
+python manage.py shell
+
+# Collect static files
+python manage.py collectstatic
+
+# Reset database (development)
+rm db.sqlite3
+python manage.py migrate
+
+# Create demo data
+python manage.py create_demo_data
+```
+
+### Frontend
+```bash
+# Production build
+npm run build
+
+# Preview build
+npm run preview
+
+# Lint
+npm run lint
+```
+
+### Documentation
+```bash
+# Generate technical documentation
+cd docs
+.\generate_docs.bat
+
+# View documentation
+start build\html\index.html
+```
+
+## 🛠️ Development
+
+### Adding New Features
+1. **Backend**: Create models in `core/models.py`, serializers in `api/serializers.py`, views in `api/views.py`
+2. **Frontend**: Create components in `src/components/`, services in `src/services/`
+3. **Database**: Create migrations with `python manage.py makemigrations`
+4. **AI Services**: Add new services in `services/` directory
+
+### Testing
+- Backend: Django Test Framework
+- Frontend: Vitest + React Testing Library
+
+### CORS Configuration
+For development, CORS is configured to accept localhost. In production, update `CORS_ALLOWED_ORIGINS` in `settings.py`.
 
 ## 🏃‍♂️ Comandi Utili
 
@@ -242,41 +399,58 @@ npm run lint
 ### Configurazione CORS
 Per sviluppo, CORS è configurato per accettare localhost. In produzione, aggiorna `CORS_ALLOWED_ORIGINS` in `settings.py`.
 
-## 📝 Note Tecniche
+## 📝 Technical Notes
 
-- **CSRF disabilitato** per API REST (solo sviluppo)
-- **Debug mode attivo** (ricorda di disabilitare in produzione)  
-- **SQLite database** (migrabile a PostgreSQL per produzione)
-- **File media** salvati in `/media/` (configurare storage per produzione)
+- **CSRF disabled** for REST API (development only)
+- **Debug mode active** (remember to disable in production)  
+- **SQLite database** (migrable to PostgreSQL for production)
+- **Media files** saved in `/media/` (configure storage for production)
+- **AI Services** have fallback modes when external services are unavailable
+- **Real-time features** implemented with WebSocket connections
 
-## 🚀 Deploy Produzione
+## 🚀 Production Deployment
 
-1. Imposta `DEBUG = False` in settings.py
-2. Configura database PostgreSQL
-3. Imposta variabili ambiente per secrets
-4. Configura server web (nginx + gunicorn)
-5. Abilita HTTPS e CSP headers
-6. Configura monitoring e logging
+1. Set `DEBUG = False` in settings.py
+2. Configure PostgreSQL database
+3. Set environment variables for secrets
+4. Configure web server (nginx + gunicorn)
+5. Enable HTTPS and CSP headers
+6. Configure monitoring and logging
+7. Set up proper CORS and security headers
+8. Configure static file serving
+9. Set up backup strategies for database and media files
 
-## 🤝 Contribuire
+### Environment Variables for Production
+```bash
+SECRET_KEY=your-secret-key
+DEBUG=False
+ALLOWED_HOSTS=your-domain.com
+DATABASE_URL=postgresql://user:pass@host:port/dbname
+NVIDIA_API_KEY=your-nvidia-key  # Optional
+MONGODB_URL=mongodb://host:port/db  # Optional
+```
 
-1. Fork del repository
-2. Crea feature branch (`git checkout -b feature/nome-funzionalità`)
-3. Commit modifiche (`git commit -am 'Aggiungi nuova funzionalità'`)
-4. Push branch (`git push origin feature/nome-funzionalità`)
-5. Crea Pull Request
+## 🤝 Contributing
 
-## 📄 Licenza
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/feature-name`)
+3. Commit changes (`git commit -am 'Add new feature'`)
+4. Push branch (`git push origin feature/feature-name`)
+5. Create Pull Request
 
-Questo progetto è proprietario - tutti i diritti riservati.
+## 📄 License
 
-## 📞 Supporto
+This project is proprietary - all rights reserved.
 
-Per supporto tecnico o domande:
-- Email: [inserire email]
-- Issues: [inserire URL repository]
-- Documentazione: [inserire URL docs]
+## 📞 Support
+
+For technical support or questions:
+- Documentation: [https://praiselab-picuslab.github.io/ER-Voice2Text/](https://praiselab-picuslab.github.io/ER-Voice2Text/)
+- Issues: Create an issue in the repository
+- Repository: [https://github.com/PRAISELab-PicusLab/ER-Voice2Text](https://github.com/PRAISELab-PicusLab/ER-Voice2Text)
 
 ---
 
-**Sistema Voice2Care** - Innovazione digitale per il Pronto Soccorso 🏥
+**ER-Voice2Text System** - Digital Innovation for Emergency Departments 🏥
+
+*Transforming emergency medicine through intelligent voice transcription and AI-powered clinical data extraction.*

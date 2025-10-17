@@ -503,4 +503,24 @@ JSON:
 
 
 # Istanza singleton del servizio - solo se necessario
-nvidia_nim_service = NVIDIANIMService()
+def get_nvidia_nim_service():
+    """
+    Factory function per ottenere l'istanza del servizio NVIDIA NIM.
+    Utilizzata per evitare problemi di importazione durante la generazione della documentazione.
+    
+    :return: Istanza del servizio NVIDIA NIM
+    :rtype: NVIDIANIMService
+    """
+    return NVIDIANIMService()
+
+
+# Per compatibilità con il codice esistente
+nvidia_nim_service = None
+try:
+    # Solo se Django è configurato correttamente
+    from django.conf import settings
+    if hasattr(settings, 'NVIDIA_API_KEY'):
+        nvidia_nim_service = get_nvidia_nim_service()
+except:
+    # Durante la generazione della documentazione o altri contesti
+    pass

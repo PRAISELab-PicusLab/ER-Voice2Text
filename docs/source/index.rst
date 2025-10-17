@@ -1,36 +1,36 @@
-Documentazione ER-Voice2Text
+ER-Voice2Text Documentation
 ============================
 
-**ER-Voice2Text** è un sistema avanzato per la gestione dei flussi di lavoro medici in Pronto Soccorso,
-che integra trascrizione vocale automatica, estrazione di entità cliniche e generazione di report medici.
+**ER-Voice2Text** is an advanced system for managing medical workflows in Emergency Departments,
+integrating automatic voice transcription, clinical entity extraction, and medical report generation.
 
-Panoramica del Sistema
-======================
+System Overview
+===============
 
-Il sistema è composto da:
+The system consists of:
 
-* **Backend Django**: API REST per la gestione dei dati medici
-* **Servizi AI**: Integrazione con NVIDIA NIM e modelli Whisper per trascrizione e analisi
-* **Database**: SQLite per dati relazionali, MongoDB per trascrizioni e analisi
-* **Frontend React**: Interfaccia utente per medici e operatori sanitari
+* **Django Backend**: REST API for medical data management
+* **AI Services**: Integration with NVIDIA NIM and Whisper models for transcription and analysis
+* **Database**: SQLite for relational data, MongoDB for transcriptions and analysis
+* **React Frontend**: User interface for doctors and healthcare operators
 
-Caratteristiche Principali
-==========================
+Key Features
+============
 
-* **Trascrizione Audio Real-time**: Utilizzo di Whisper per trascrizione accurata
-* **Estrazione Entità Cliniche**: LLM e NER per identificazione automatica di dati clinici
-* **Workflow Medico Completo**: Dalla registrazione audio al report PDF finale
-* **Autenticazione Medica**: Sistema di login per operatori sanitari
-* **Dashboard Analytics**: Statistiche e visualizzazioni per l'analisi dei dati
+* **Real-time Audio Transcription**: Using Whisper for accurate transcription
+* **Clinical Entity Extraction**: LLM and NER for automatic identification of clinical data
+* **Complete Medical Workflow**: From audio recording to final PDF report
+* **Medical Authentication**: Login system for healthcare operators
+* **Analytics Dashboard**: Statistics and visualizations for data analysis
 
-Architettura del Backend
-========================
+Backend Architecture
+====================
 
-Il backend è organizzato nei seguenti moduli:
+The backend is organized in the following modules:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Moduli Backend:
+   :caption: Backend Modules:
 
    core
    api
@@ -39,45 +39,36 @@ Il backend è organizzato nei seguenti moduli:
    auth_views
    manage
 
-Modelli Django
-==============
-
-Il sistema utilizza modelli Django per la gestione di:
-
-* **Doctor**: Gestione dei medici e specializzazioni
-* **Patient**: Anagrafica e dati clinici pazienti
-* **Encounter**: Episodi di cura in Pronto Soccorso
-* **AudioTranscript**: Trascrizioni audio con metadati
-* **ClinicalData**: Dati clinici estratti dalle trascrizioni
-* **ClinicalReport**: Report medici finalizzati
-
-Servizi AI e Integrazione
-==========================
-
-Il sistema integra diversi servizi per l'analisi intelligente:
-
-* **NVIDIA NIM**: Large Language Model per estrazione entità cliniche
-* **Whisper**: Trascrizione speech-to-text ad alta precisione
-* **Text2NER**: Named Entity Recognition per analisi testuale
-* **MongoDB**: Storage per trascrizioni e dati non strutturati
-
-API Reference
+Django Models
 =============
 
-.. toctree::
-   :maxdepth: 3
-   :caption: API e Moduli:
+The system uses Django models for managing:
 
-   modules
+* **Doctor**: Management of doctors and specializations
+* **Patient**: Patient registry and clinical data  
+* **Encounter**: Emergency Department care episodes
+* **AudioTranscript**: Audio transcriptions with metadata
+* **ClinicalData**: Clinical data extracted from transcriptions
+* **ClinicalReport**: Finalized medical reports
 
-Configurazione e Deploy
-=======================
+AI Services and Integration
+===========================
 
-Per informazioni su installazione, configurazione e deployment, 
-consultare il README del progetto e la documentazione di setup.
+The system integrates several services for intelligent analysis:
 
-Indici e Tabelle
-================
+* **NVIDIA NIM**: Large Language Model for clinical entity extraction
+* **Whisper**: High-precision speech-to-text transcription
+* **Text2NER**: Named Entity Recognition for textual analysis  
+* **MongoDB**: Storage for transcriptions and unstructured data
+
+Configuration and Deployment
+=============================
+
+For information on installation, configuration and deployment, 
+consult the project README and setup documentation.
+
+Indices and Tables
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`

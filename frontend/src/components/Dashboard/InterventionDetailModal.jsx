@@ -209,7 +209,7 @@ const InterventionDetailModal = ({ intervention, show, onHide, onEdit }) => {
                 </div>
 
                 {/* Dati Clinici */}
-                {details?.clinical_data && (
+                {details?.clinical_data && Object.keys(details.clinical_data).length > 0 && (
                   <div className="col-12 mb-4">
                     <div className="card">
                       <div className="card-header bg-success text-white">
@@ -220,76 +220,109 @@ const InterventionDetailModal = ({ intervention, show, onHide, onEdit }) => {
                       </div>
                       <div className="card-body">
                         <div className="row">
-                          {details.clinical_data.patient_info && (
+                          {/* Informazioni Paziente - ora leggono dal formato piatto */}
+                          {(details.clinical_data.first_name || details.clinical_data.last_name || 
+                            details.clinical_data.age || details.clinical_data.gender || 
+                            details.clinical_data.birth_date || details.clinical_data.phone || 
+                            details.clinical_data.residence_city || details.clinical_data.codice_fiscale) && (
                             <div className="col-md-6 mb-3">
                               <h6>Informazioni Paziente</h6>
                               <ul className="list-unstyled">
-                                {details.clinical_data.patient_info.first_name && (
-                                  <li><strong>Nome:</strong> {details.clinical_data.patient_info.first_name}</li>
+                                {details.clinical_data.first_name && (
+                                  <li><strong>Nome:</strong> {details.clinical_data.first_name}</li>
                                 )}
-                                {details.clinical_data.patient_info.last_name && (
-                                  <li><strong>Cognome:</strong> {details.clinical_data.patient_info.last_name}</li>
+                                {details.clinical_data.last_name && (
+                                  <li><strong>Cognome:</strong> {details.clinical_data.last_name}</li>
                                 )}
-                                {details.clinical_data.patient_info.age && (
-                                  <li><strong>Età:</strong> {details.clinical_data.patient_info.age}</li>
+                                {details.clinical_data.codice_fiscale && (
+                                  <li><strong>Codice Fiscale:</strong> {details.clinical_data.codice_fiscale}</li>
                                 )}
-                                {details.clinical_data.patient_info.gender && (
-                                  <li><strong>Sesso:</strong> {details.clinical_data.patient_info.gender}</li>
+                                {details.clinical_data.age && (
+                                  <li><strong>Età:</strong> {details.clinical_data.age}</li>
                                 )}
-                                {details.clinical_data.patient_info.birth_date && (
-                                  <li><strong>Data Nascita:</strong> {details.clinical_data.patient_info.birth_date}</li>
+                                {details.clinical_data.gender && (
+                                  <li><strong>Sesso:</strong> {details.clinical_data.gender}</li>
                                 )}
-                                {details.clinical_data.patient_info.phone && (
-                                  <li><strong>Telefono:</strong> {details.clinical_data.patient_info.phone}</li>
+                                {details.clinical_data.birth_date && (
+                                  <li><strong>Data Nascita:</strong> {details.clinical_data.birth_date}</li>
                                 )}
-                                {details.clinical_data.patient_info.residence_city && (
-                                  <li><strong>Città:</strong> {details.clinical_data.patient_info.residence_city}</li>
+                                {details.clinical_data.phone && (
+                                  <li><strong>Telefono:</strong> {details.clinical_data.phone}</li>
+                                )}
+                                {details.clinical_data.residence_city && (
+                                  <li><strong>Città:</strong> {details.clinical_data.residence_city}</li>
+                                )}
+                                {details.clinical_data.access_mode && (
+                                  <li><strong>Modalità Accesso:</strong> {details.clinical_data.access_mode}</li>
                                 )}
                               </ul>
                             </div>
                           )}
                           
-                          {details.clinical_data.vital_signs && (
+                          {/* Parametri Vitali - ora leggono dal formato piatto */}
+                          {(details.clinical_data.blood_pressure || details.clinical_data.heart_rate || 
+                            details.clinical_data.temperature || details.clinical_data.oxygen_saturation ||
+                            details.clinical_data.blood_glucose) && (
                             <div className="col-md-6 mb-3">
                               <h6>Parametri Vitali</h6>
                               <ul className="list-unstyled">
-                                {details.clinical_data.vital_signs.blood_pressure && (
-                                  <li><strong>Pressione:</strong> {details.clinical_data.vital_signs.blood_pressure}</li>
+                                {details.clinical_data.blood_pressure && (
+                                  <li><strong>Pressione:</strong> {details.clinical_data.blood_pressure}</li>
                                 )}
-                                {details.clinical_data.vital_signs.heart_rate && (
-                                  <li><strong>Freq. Cardiaca:</strong> {details.clinical_data.vital_signs.heart_rate}</li>
+                                {details.clinical_data.heart_rate && (
+                                  <li><strong>Freq. Cardiaca:</strong> {details.clinical_data.heart_rate}</li>
                                 )}
-                                {details.clinical_data.vital_signs.temperature && (
-                                  <li><strong>Temperatura:</strong> {details.clinical_data.vital_signs.temperature}</li>
+                                {details.clinical_data.temperature && (
+                                  <li><strong>Temperatura:</strong> {details.clinical_data.temperature}</li>
                                 )}
-                                {details.clinical_data.vital_signs.oxygen_saturation && (
-                                  <li><strong>Saturazione O2:</strong> {details.clinical_data.vital_signs.oxygen_saturation}</li>
+                                {details.clinical_data.oxygen_saturation && (
+                                  <li><strong>Saturazione O2:</strong> {details.clinical_data.oxygen_saturation}</li>
+                                )}
+                                {details.clinical_data.blood_glucose && (
+                                  <li><strong>Glicemia:</strong> {details.clinical_data.blood_glucose}</li>
                                 )}
                               </ul>
                             </div>
                           )}
                           
-                          {details.clinical_data.clinical_assessment && (
+                          {/* Valutazione Clinica - ora legge dal formato piatto */}
+                          {(details.clinical_data.symptoms || details.clinical_data.diagnosis || 
+                            details.clinical_data.treatment || details.clinical_data.medical_notes ||
+                            details.clinical_data.triage_code || details.clinical_data.assessment ||
+                            details.clinical_data.history || details.clinical_data.medications_taken) && (
                             <div className="col-12 mb-3">
                               <h6>Valutazione Clinica</h6>
                               <div className="row">
                                 <div className="col-md-6">
-                                  {details.clinical_data.clinical_assessment.symptoms && (
-                                    <p><strong>Sintomi:</strong> {details.clinical_data.clinical_assessment.symptoms}</p>
+                                  {details.clinical_data.symptoms && (
+                                    <p><strong>Sintomi:</strong> {details.clinical_data.symptoms}</p>
                                   )}
-                                  {details.clinical_data.clinical_assessment.diagnosis && (
-                                    <p><strong>Diagnosi:</strong> {details.clinical_data.clinical_assessment.diagnosis}</p>
+                                  {details.clinical_data.diagnosis && (
+                                    <p><strong>Diagnosi:</strong> {details.clinical_data.diagnosis}</p>
+                                  )}
+                                  {details.clinical_data.assessment && (
+                                    <p><strong>Valutazione:</strong> {details.clinical_data.assessment}</p>
+                                  )}
+                                  {details.clinical_data.triage_code && (
+                                    <p><strong>Codice Triage:</strong> 
+                                      <span className={`badge ms-2 bg-${getTriageColor(details.clinical_data.triage_code)}`}>
+                                        {getTriageIcon(details.clinical_data.triage_code)} {getTriageDisplayName(details.clinical_data.triage_code)}
+                                      </span>
+                                    </p>
                                   )}
                                 </div>
                                 <div className="col-md-6">
-                                  {details.clinical_data.clinical_assessment.treatment && (
-                                    <p><strong>Trattamento:</strong> {details.clinical_data.clinical_assessment.treatment}</p>
+                                  {details.clinical_data.treatment && (
+                                    <p><strong>Trattamento:</strong> {details.clinical_data.treatment}</p>
                                   )}
-                                  {details.clinical_data.clinical_assessment.medical_notes && (
-                                    <p><strong>Note:</strong> {details.clinical_data.clinical_assessment.medical_notes}</p>
+                                  {details.clinical_data.medical_notes && (
+                                    <p><strong>Note:</strong> {details.clinical_data.medical_notes}</p>
                                   )}
-                                  {details.clinical_data.clinical_assessment.access_mode && (
-                                    <p><strong>Modalità Accesso:</strong> {details.clinical_data.clinical_assessment.access_mode}</p>
+                                  {details.clinical_data.history && (
+                                    <p><strong>Anamnesi:</strong> {details.clinical_data.history}</p>
+                                  )}
+                                  {details.clinical_data.medications_taken && (
+                                    <p><strong>Farmaci Assunti:</strong> {details.clinical_data.medications_taken}</p>
                                   )}
                                 </div>
                               </div>

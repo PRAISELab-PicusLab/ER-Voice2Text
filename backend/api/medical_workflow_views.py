@@ -22,7 +22,7 @@ from core.models import Patient, Doctor, Encounter, AudioTranscript as DjangoAud
 from services.nvidia_nim import NVIDIANIMService
 from services.whisper_service import whisper_service
 from services.mongodb_service import mongodb_service
-from services.pdf_report import pdf_report_service
+from services.pdf_report import pdf_report_service, get_pdf_report_service
 from services.clinical_extraction import clinical_extraction_service
 
 logger = logging.getLogger(__name__)
@@ -503,11 +503,21 @@ def generate_pdf_report(request, transcript_id):
         
         # Genera PDF con nome strutturato
         encounter_id = report_content.get('encounter_id', transcript_id)
-        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical', patient_name, visit_date)
+        
+        # Ottieni l'istanza del servizio PDF
+        pdf_service = pdf_report_service or get_pdf_report_service()
+        if not pdf_service:
+            logger.error("Servizio PDF non disponibile")
+            return Response(
+                {'error': 'Servizio PDF non disponibile'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        pdf_path = pdf_service.get_report_path(encounter_id, 'medical', patient_name, visit_date)
         
         logger.info(f"Generando PDF in: {pdf_path}")
         
-        success = pdf_report_service.generate_medical_report(report_content, pdf_path)
+        success = pdf_service.generate_medical_report(report_content, pdf_path)
         
         if not success:
             logger.error(f"Errore generazione PDF per transcript_id: {transcript_id}")
@@ -580,14 +590,24 @@ def download_pdf_report(request, transcript_id):
             logger.warning(f"Errore estrazione dati paziente per filename: {e}")
         
         encounter_id = report_content.get('encounter_id', transcript_id)
-        pdf_path = pdf_report_service.get_report_path(encounter_id, 'medical', patient_name, visit_date)
+        
+        # Ottieni l'istanza del servizio PDF
+        pdf_service = pdf_report_service or get_pdf_report_service()
+        if not pdf_service:
+            logger.error("Servizio PDF non disponibile")
+            return Response(
+                {'error': 'Servizio PDF non disponibile'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        pdf_path = pdf_service.get_report_path(encounter_id, 'medical', patient_name, visit_date)
         
         logger.info(f"PDF path: {pdf_path}")
         
         # Genera PDF se non esiste già
         if not os.path.exists(pdf_path):
             logger.info(f"PDF non esiste, generando: {pdf_path}")
-            success = pdf_report_service.generate_medical_report(report_content, pdf_path)
+            success = pdf_service.generate_medical_report(report_content, pdf_path)
             if not success:
                 logger.error(f"Errore generazione PDF per transcript_id: {transcript_id}")
                 return HttpResponse("Errore generazione PDF", status=500)

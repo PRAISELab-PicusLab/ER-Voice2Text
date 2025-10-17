@@ -117,7 +117,7 @@ class WhisperService:
                 'duration': result.get('duration', 0.0),
                 'segments': segments,
                 'model': self.model_name,
-                'timestamp': datetime.now(datetime.timezone.utc).isoformat()
+                'timestamp': datetime.utcnow().isoformat()
             }
             
         except Exception as e:

@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any, Optional
 from enum import Enum
 
-from .nvidia_nim import nvidia_nim_service
+from .nvidia_nim import nvidia_nim_service, get_nvidia_nim_service
 from .ner_service import ner_service
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class ClinicalExtractionService:
         """
         # Inizializza LLM service
         try:
-            self.llm_service = nvidia_nim_service
+            self.llm_service = nvidia_nim_service or get_nvidia_nim_service()
         except Exception as e:
             logger.warning(f"Impossibile inizializzare servizio LLM: {e}")
             self.llm_service = None

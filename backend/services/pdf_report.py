@@ -401,5 +401,24 @@ class PDFReportService:
         return os.path.join(reports_dir, filename)
 
 
-# Istanza singleton del servizio
-pdf_report_service = PDFReportService()
+def get_pdf_report_service():
+    """
+    Factory function per ottenere l'istanza del servizio PDF Report.
+    Utilizzata per evitare problemi di importazione durante la generazione della documentazione.
+    
+    :return: Istanza del servizio PDF Report
+    :rtype: PDFReportService
+    """
+    return PDFReportService()
+
+
+# Istanza singleton del servizio - solo se necessario
+pdf_report_service = None
+try:
+    # Solo se Django è configurato correttamente e le dipendenze sono disponibili
+    from django.conf import settings
+    if hasattr(settings, 'MEDIA_ROOT'):
+        pdf_report_service = get_pdf_report_service()
+except:
+    # Durante la generazione della documentazione o altri contesti
+    pass
